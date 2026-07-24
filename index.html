@@ -128,11 +128,12 @@
   .btn-cancel{background:#fff; border:1px solid var(--border) !important; color:var(--muted);}
   .btn-cancel:hover{background:#f2f3f4;}
 
-  textarea#output{
+  textarea.output-box{
     width:100%; min-height:380px; font-family: Consolas, monospace; font-size:13px;
     padding:14px; border-radius:8px; border:1px solid var(--border); resize:vertical;
     background:#fbfbfb;
   }
+  textarea#reportOutput{ min-height:220px; }
   .copybar{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
   button.copy{
     background:#fff; border:1px solid var(--accent); color:var(--accent-dark);
@@ -211,7 +212,7 @@
   <div class="col">
     <div class="card">
       <h2>Mesaj generat</h2>
-      <textarea id="output" readonly placeholder="Apasă „Generează mesajul” după ce ai bifat activitățile pentru punctele 3 și 4."></textarea>
+      <textarea id="output" class="output-box" readonly placeholder="Apasă „Generează mesajul” după ce ai bifat activitățile pentru punctele 3 și 4."></textarea>
       <div class="copybar">
         <button class="copy" onclick="copyOutput()">Copiază mesajul</button>
         <a id="waBtn" class="whatsapp" href="#" onclick="return prepWhatsapp(event)">Trimite pe WhatsApp</a>
@@ -222,6 +223,26 @@
         <a id="waFallbackLink" href="#">deschide WhatsApp cu mesajul</a>
       </p>
     </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📊 Raport lunar activități</h2>
+  <p class="fixed-note" style="margin-top:0;">
+    Arată, pentru fiecare activitate din Anexă, în ce zile din luna aleasă a fost inclusă în mesajul generat.
+    Se salvează automat de fiecare dată când apeși „Generează mesajul”.
+  </p>
+  <div class="header-fields">
+    <div class="field">
+      <label for="reportMonth">Luna</label>
+      <input type="month" id="reportMonth">
+    </div>
+  </div>
+  <button class="generate" style="margin-top:10px;" onclick="generateMonthlyReport()">Generează raportul</button>
+  <textarea id="reportOutput" class="output-box" readonly placeholder="Apasă „Generează raportul” ca să vezi datele fiecărei activități pentru luna selectată."></textarea>
+  <div class="copybar">
+    <button class="copy" onclick="copyReport()">Copiază raportul</button>
+    <span id="reportCopyStatus" class="fixed-note"></span>
   </div>
 </div>
 
@@ -399,9 +420,19 @@ function fmtDate(iso){
 }
 
 function loadHistory(){
-  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }catch(e){ return {}; }
+  let h;
+  try{ h = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }catch(e){ h = {}; }
+  // migrare din formatul vechi (o singură dată per activitate) în listă de date
+  Object.keys(h).forEach(id=>{
+    if(!Array.isArray(h[id])) h[id] = [h[id]];
+  });
+  return h;
 }
 function saveHistory(h){ localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }
+function lastDateOf(history, id){
+  const dates = history[id];
+  return dates && dates.length ? dates[dates.length-1] : null;
+}
 
 function loadCustomPoints(){
   try{ return JSON.parse(localStorage.getItem(CUSTOM_POINTS_KEY)) || []; }catch(e){ return []; }
@@ -524,10 +555,11 @@ function buildChecklist(containerId, groupName){
     item.id = groupName+'_item_'+a.id;
 
     let lastUsedHtml = '';
-    if(history[a.id]){
-      const days = Math.floor((new Date(todayStr()) - new Date(history[a.id])) / 86400000);
+    const lastDate = lastDateOf(history, a.id);
+    if(lastDate){
+      const days = Math.floor((new Date(todayStr()) - new Date(lastDate)) / 86400000);
       const cls = days >= 3 ? 'old' : '';
-      lastUsedHtml = `<span class="last-used ${cls}">ultima dată: ${fmtDate(history[a.id])}</span>`;
+      lastUsedHtml = `<span class="last-used ${cls}">ultima dată: ${fmtDate(lastDate)}</span>`;
     }
 
     let extraFieldsHtml = '';
@@ -687,7 +719,8 @@ function generate(){
   // actualizează istoricul de rotație pentru activitățile bifate la 3 și 4
   const history = loadHistory();
   (dailyState.list3 || []).concat(dailyState.list4 || []).forEach(id=>{
-    history[id] = dataTura;
+    if(!history[id]) history[id] = [];
+    if(!history[id].includes(dataTura)) history[id].push(dataTura);
   });
   saveHistory(history);
   refreshLastUsedBadges();
@@ -701,12 +734,13 @@ function refreshLastUsedBadges(){
   });
   document.querySelectorAll('.item').forEach(item=>{
     const id = item.id.split('_item_')[1];
-    if(history[id]){
-      const days = Math.floor((new Date(todayStr()) - new Date(history[id])) / 86400000);
+    const lastDate = lastDateOf(history, id);
+    if(lastDate){
+      const days = Math.floor((new Date(todayStr()) - new Date(lastDate)) / 86400000);
       const cls = days >= 3 ? 'old' : '';
       const span = document.createElement('span');
       span.className = 'last-used ' + cls;
-      span.textContent = 'ultima dată: ' + fmtDate(history[id]);
+      span.textContent = 'ultima dată: ' + fmtDate(lastDate);
       item.querySelector('.title').appendChild(span);
     }
   });
@@ -766,6 +800,32 @@ function clearDay(){
   renderAll();
 }
 
+function generateMonthlyReport(){
+  const monthValue = document.getElementById('reportMonth').value; // 'YYYY-MM'
+  const out = document.getElementById('reportOutput');
+  if(!monthValue){ out.value = 'Alege o lună mai întâi.'; return; }
+
+  const history = loadHistory();
+  const [y, m] = monthValue.split('-');
+  const lines = activitati.map(a=>{
+    const dates = (history[a.id] || []).filter(d => d.startsWith(monthValue)).sort();
+    const datesText = dates.length ? dates.map(fmtDate).join(', ') : '— nicio dată';
+    return `${a.id}. ${a.title}: ${datesText}`;
+  });
+
+  out.value = `📊 Raport activități – ${m}/${y}\n\n${lines.join('\n')}`;
+  document.getElementById('reportCopyStatus').textContent = '';
+}
+
+function copyReport(){
+  const out = document.getElementById('reportOutput');
+  if(!out.value.trim()){ generateMonthlyReport(); }
+  out.select();
+  document.execCommand('copy');
+  document.getElementById('reportCopyStatus').textContent = 'Copiat!';
+  setTimeout(()=>document.getElementById('reportCopyStatus').textContent='', 2000);
+}
+
 function applyStateToDom(){
   document.getElementById('dataTura').value = dailyState.date;
   document.getElementById('responsabilGeneral').value = dailyState.responsabilGeneral || '';
@@ -799,6 +859,7 @@ customPoints = loadCustomPoints();
 dailyState = loadState();
 renderAll();
 updateLangButtons();
+document.getElementById('reportMonth').value = todayStr().slice(0,7);
 
 document.getElementById('dataTura').addEventListener('change', ()=>{
   dailyState.date = document.getElementById('dataTura').value;
