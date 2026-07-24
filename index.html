@@ -225,15 +225,29 @@ const activitati = [
    desc:"Cu peria de mână și utilajul T300, spălați foarte bine pardoseala de pe rampa de acces auto a parcării subterane – acces BARBU VACARESCU.\n• Insistați în zonele foarte murdare și mai ales pe marginile albastre, dar și pe zona centrală dintre stâlpișorii de separare a benzilor.\n• Acordați atenție zonelor cu acumulări de ulei și murdărie persistentă (urme de anvelope).\n• Dacă este necesar, repetați spălarea în zonele unde murdăria nu este îndepărtată complet din prima trecere.\n• Folosiți cantitatea corectă de detergent și nu lăsați exces de apă pe rampă (risc de alunecare).\n• La final, verificați vizual rampa pe toată lungimea și asigurați-vă că nu au rămas zone necurățate."},
   {id:4, title:"Spălare rampă acces parcare subterană Floreasca (stradă → nivel -3)",
    desc:"Cu peria de mână și utilajul T300, spălați foarte bine pardoseala de pe rampa de acces auto a parcării subterane – acces FLOREASCA.\n• Insistați în zonele foarte murdare și mai ales pe marginile albastre, dar și pe zona centrală dintre stâlpișorii de separare a benzilor.\n• Acordați atenție zonelor cu acumulări de ulei și murdărie persistentă (urme de anvelope).\n• Dacă este necesar, repetați spălarea în zonele unde murdăria nu este îndepărtată complet din prima trecere.\n• Folosiți cantitatea corectă de detergent și nu lăsați exces de apă pe rampă (risc de alunecare).\n• La final, verificați vizual rampa pe toată lungimea și asigurați-vă că nu au rămas zone necurățate."},
-  {id:5, title:"Decapare Food Court",
-   desc:"Decapare cu detergent TRUCK CLEANER.\nZona de lucru: Coridorul din fața restaurantelor (Intrare Toalete – Burger King – Chopstix – Burton – Toans, inclusiv intrările către spațiile tehnice din zona Chopstix și Toans); Coridorul de la McDonald's până la Costa Coffee, inclusiv zona până la balustrada din colț (fostul loc de joacă).\nEtape: aplicarea soluției decapante pe toate zonele stabilite; timp minim de acționare 10 minute; frecarea manuală a pardoselii cu talpa 10-15 minute, insistând pe pete și depuneri persistente; aspirarea reziduurilor lichide cu mașina T300; clătirea și neutralizarea suprafeței cu apă curată; uscarea completă a zonei înainte de finalizare."},
+  {id:5, title:"Decapare Food Court", fields:[
+     {key:'p1', label:'Punct 1', placeholder:'ex: Intrare Toalete'},
+     {key:'p2', label:'Punct 2', placeholder:'ex: Burger King'},
+     {key:'p3', label:'Punct 3', placeholder:'ex: Chopstix'},
+     {key:'p4', label:'Punct 4', placeholder:'ex: Burton'},
+     {key:'p5', label:'Punct 5', placeholder:'ex: Toans'},
+     {key:'z1', label:'Zonă tehnică 1', placeholder:'ex: Chopstix'},
+     {key:'z2', label:'Zonă tehnică 2', placeholder:'ex: Toans'},
+   ],
+   desc:"Decapare cu detergent TRUCK CLEANER.\n🕐 Zona de lucru:\n• Coridorul din fața restaurantelor: {{P1}} – {{P2}} – {{P3}} – {{P4}} – {{P5}}, inclusiv intrările către spațiile tehnice din zona {{Z1}} și {{Z2}}.\n🔹 Etapele de lucru:\n• Aplicarea soluției decapante TRUCK CLEANER pe toate zonele stabilite.\n• Respectarea unui timp minim de acționare de 10 minute.\n• Frecarea manuală a pardoselii cu talpa timp de 10–15 minute, insistând asupra petelor și depunerilor persistente.\n• Aspirarea reziduurilor lichide cu mașina T300.\n• Clătirea și neutralizarea suprafeței cu apă curată pentru prevenirea alunecării.\n• Uscarea completă a zonei înainte de finalizarea lucrării."},
   {id:6, title:"Spălare scări rulante Nord (zona Carrefour)",
    desc:"Spălare scări rulante și travelatoare – zona Carrefour (trepte și contratrepte):\n   * Nivel -3 ➜ -2\n   * Nivel -2 ➜ -1\n   * Nivel -1 ➜ 0\n   * Nivel 0 ➜ 1\n   * Nivel 1 ➜ 2\nÎnainte de a pune buretele pe scări, folosiți pulverizatorul mare pentru a stropi/înmuia bine treptele și contratreptele, apoi folosiți buretele."},
   {id:7, title:"Spălare scări rulante Sud (zona Zara)",
    desc:"Spălare scări rulante și travelatoare – zona Zara (trepte și contratrepte):\n   * Nivel -3 ➜ -2\n   * Nivel -2 ➜ -1\n   * Nivel -1 ➜ 0\n   * Nivel 0 ➜ 1\n   * Nivel 1 ➜ 2\nÎnainte de a pune buretele pe scări, folosiți pulverizatorul mare pentru a stropi/înmuia bine treptele și contratreptele, apoi folosiți buretele."},
-  {id:8, title:"Spălare în profunzime parcare subterană Nivel -2", hasFields:true,
+  {id:8, title:"Spălare în profunzime parcare subterană Nivel -2", fields:[
+     {key:'culoare', label:'Culoar', placeholder:'ex: PORTOCALIU'},
+     {key:'interval', label:'Interval orar', placeholder:'ex: 23:00 - 00:30'},
+   ],
    desc:"Mașina T17 pentru zonele deschise și T300 pentru margini, stâlpi și zone greu accesibile.\nCuloar: {{CULOARE}}\nInterval: {{INTERVAL}}\nSe va spăla integral culoarul indicat și toate zonele adiacente. Se vor curăța: colțurile, marginile pereților, zonele din jurul stâlpilor, spațiile din jurul hidranților și echipamentelor tehnice. Orice pete persistente de ulei sau murdărie trebuie tratate suplimentar și curățate înainte de finalizarea lucrării."},
-  {id:9, title:"Spălare în profunzime parcare subterană Nivel -3", hasFields:true,
+  {id:9, title:"Spălare în profunzime parcare subterană Nivel -3", fields:[
+     {key:'culoare', label:'Culoar', placeholder:'ex: PORTOCALIU'},
+     {key:'interval', label:'Interval orar', placeholder:'ex: 23:00 - 00:30'},
+   ],
    desc:"Mașina T17 pentru zonele deschise și T300 pentru margini, stâlpi și zone greu accesibile.\nCuloar: {{CULOARE}}\nInterval: {{INTERVAL}}\nSe va spăla integral culoarul indicat și toate zonele adiacente. Se vor curăța: colțurile, marginile pereților, zonele din jurul stâlpilor, spațiile din jurul hidranților și echipamentelor tehnice. Orice pete persistente de ulei sau murdărie trebuie tratate suplimentar și curățate înainte de finalizarea lucrării."},
   {id:10, title:"Decapare grup sanitar Nivel -1",
    desc:"Curățenie generală/decapare cu utilajul Kaivac No Touch și detergent SANPURID: pardoseli, obiecte sanitare, oglinzi, uși, curățarea semnalisticii toaletelor inclusiv panourile, indicatoarele și ramele decorative."},
@@ -408,6 +422,15 @@ function renderPoints(){
   });
 }
 
+function descPreview(a){
+  if(!a.fields || !a.fields.length) return a.desc;
+  let out = a.desc;
+  a.fields.forEach(f=>{
+    out = out.replaceAll(`{{${f.key.toUpperCase()}}}`, '____');
+  });
+  return out;
+}
+
 function buildChecklist(containerId, groupName){
   const el = document.getElementById(containerId);
   const history = loadHistory();
@@ -424,16 +447,11 @@ function buildChecklist(containerId, groupName){
     }
 
     let extraFieldsHtml = '';
-    if(a.hasFields){
-      extraFieldsHtml = `
-        <div class="extra-fields">
-          <label>Culoar
-            <input type="text" id="${groupName}_culoare_${a.id}" placeholder="ex: PORTOCALIU" oninput="onFieldInput('${groupName}_culoare_${a.id}')">
-          </label>
-          <label>Interval orar
-            <input type="text" id="${groupName}_interval_${a.id}" placeholder="ex: 23:00 - 00:30" oninput="onFieldInput('${groupName}_interval_${a.id}')">
-          </label>
-        </div>`;
+    if(a.fields && a.fields.length){
+      extraFieldsHtml = `<div class="extra-fields">` + a.fields.map(f=>`
+          <label>${f.label}
+            <input type="text" id="${groupName}_${f.key}_${a.id}" placeholder="${f.placeholder||''}" oninput="onFieldInput('${groupName}_${f.key}_${a.id}')">
+          </label>`).join('') + `</div>`;
     }
 
     item.innerHTML = `
@@ -441,7 +459,7 @@ function buildChecklist(containerId, groupName){
         <input type="checkbox" data-group="${groupName}" data-id="${a.id}" onchange="onToggle(this)">
         <div style="width:100%">
           <div class="title">${a.id}. ${a.title} ${lastUsedHtml}</div>
-          <div class="desc">${a.desc.replace('{{CULOARE}}','____').replace('{{INTERVAL}}','____')}</div>
+          <div class="desc">${descPreview(a)}</div>
           ${extraFieldsHtml}
         </div>
       </label>`;
@@ -526,10 +544,11 @@ function selectedText(groupId){
     const a = activitati.find(x=>x.id == id);
     if(!a) return '';
     let desc = a.desc;
-    if(a.hasFields){
-      const culoare = (dailyState.fieldValues[groupId+'_culoare_'+a.id] || '').trim() || '____';
-      const interval = (dailyState.fieldValues[groupId+'_interval_'+a.id] || '').trim() || '____';
-      desc = desc.replace('{{CULOARE}}', culoare).replace('{{INTERVAL}}', interval);
+    if(a.fields && a.fields.length){
+      a.fields.forEach(f=>{
+        const val = (dailyState.fieldValues[groupId+'_'+f.key+'_'+a.id] || '').trim() || '____';
+        desc = desc.replaceAll(`{{${f.key.toUpperCase()}}}`, val);
+      });
     }
     return `*${a.title}*\n${desc}`;
   }).join('\n\n');
