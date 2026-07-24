@@ -86,6 +86,12 @@
   }
   .add-task-row button:hover{background:#eef8f2;}
 
+  .lang-toggle{display:flex; gap:8px; margin-bottom:10px;}
+  .lang-btn{
+    flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:#fff; color:var(--muted); font-size:13px; cursor:pointer; font-weight:600;
+  }
+  .lang-btn.active{border-color:var(--accent); background:#eef8f2; color:var(--accent-dark);}
   button.generate{
     background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:8px;
     font-size:14px; font-weight:600; cursor:pointer; width:100%;
@@ -194,6 +200,10 @@
       </div>
     </div>
 
+    <div class="lang-toggle">
+      <button type="button" id="langRoBtn" class="lang-btn" onclick="setLang('ro')">🇷🇴 Română</button>
+      <button type="button" id="langEnBtn" class="lang-btn" onclick="setLang('en')">🇬🇧 English</button>
+    </div>
     <button class="generate" onclick="generate()">Generează mesajul</button>
     <button class="clear-day" onclick="clearDay()">Golește selecția zilei curente</button>
   </div>
@@ -261,6 +271,68 @@ const activitati = [
    desc:"Ridicați toate covoarele lamelare de la ambele intrări. Aspirați foarte bine covoarele și întreaga suprafață de sub ele, inclusiv marginile și colțurile. Spălați temeinic pardoseala de sub covoare și îndepărtați toate urmele de noroi, nisip și murdărie. Spălați covoarele lamelare și curățați ramele și benzile de cauciuc."},
 ];
 
+// traduceri EN pentru mesajul generat (interfața rămâne în română) — indexate după id
+const activitatiEN = {
+  1: {title:"Stripping the exterior plaza – Calea Floreasca entrance",
+      desc:"Strip the FLOREASCA exterior plaza flooring with TRUCK CLEAN and NUFAR detergent, only where there are stains.\n• Apply the stripping solution to the floor (for 1 small 10L bucket, add 0.5L of stripping solution);\n• Minimum contact time per procedure: 15 minutes – the detergent must remain on the floor;\n• Mechanized scrubbing with the T3 or T7 auto-scrubber, or manual scrubbing with a pad – focus on stained areas;\n• Vacuum up the liquid residue;\n• Rinse with the machine using clean water without detergent (to prevent slipping)."},
+  2: {title:"Stripping the exterior plaza – Barbu Văcărescu entrance",
+      desc:"Strip the BARBU VACARESCU exterior plaza flooring with TRUCK CLEAN and NUFAR detergent, only where there are stains.\n• Apply the stripping solution to the floor (for 1 small 10L bucket, add 0.5L of stripping solution);\n• Minimum contact time per procedure: 15 minutes – the detergent must remain on the floor;\n• Mechanized scrubbing with the T3 or T7 auto-scrubber, or manual scrubbing with a pad – focus on stained areas;\n• Vacuum up the liquid residue;\n• Rinse with the machine using clean water without detergent (to prevent slipping)."},
+  3: {title:"Washing the underground parking access ramp – Barbu Văcărescu (street → level -3)",
+      desc:"Using the hand brush and the T300 machine, thoroughly wash the flooring of the vehicle access ramp to the underground parking – BARBU VACARESCU entrance.\n• Focus on heavily soiled areas, especially the blue edges, and the central area between the lane-dividing bollards.\n• Pay attention to areas with oil buildup and persistent dirt (tire marks).\n• If necessary, repeat washing in areas where dirt was not fully removed on the first pass.\n• Use the correct amount of detergent and do not leave excess water on the ramp (slip hazard).\n• At the end, visually check the entire length of the ramp and make sure no areas were left uncleaned."},
+  4: {title:"Washing the underground parking access ramp – Floreasca (street → level -3)",
+      desc:"Using the hand brush and the T300 machine, thoroughly wash the flooring of the vehicle access ramp to the underground parking – FLOREASCA entrance.\n• Focus on heavily soiled areas, especially the blue edges, and the central area between the lane-dividing bollards.\n• Pay attention to areas with oil buildup and persistent dirt (tire marks).\n• If necessary, repeat washing in areas where dirt was not fully removed on the first pass.\n• Use the correct amount of detergent and do not leave excess water on the ramp (slip hazard).\n• At the end, visually check the entire length of the ramp and make sure no areas were left uncleaned."},
+  5: {title:"Food Court Stripping",
+      desc:"Stripping with TRUCK CLEANER detergent.\n🕐 Work area:\n• Corridor in front of the restaurants: {{P1}} – {{P2}} – {{P3}} – {{P4}} – {{P5}}, including the entrances to the technical areas in the {{Z1}} and {{Z2}} zone.\n🔹 Work steps:\n• Apply TRUCK CLEANER stripping solution to all designated areas.\n• Allow a minimum contact time of 10 minutes.\n• Manually scrub the floor with a pad for 10–15 minutes, focusing on stains and persistent buildup.\n• Vacuum up liquid residue using the T300 machine.\n• Rinse and neutralize the surface with clean water to prevent slipping.\n• Fully dry the area before finishing the job."},
+  6: {title:"Washing the North escalators (Carrefour area)",
+      desc:"Wash the escalators and travelators – Carrefour area (steps and risers):\n   * Level -3 ➜ -2\n   * Level -2 ➜ -1\n   * Level -1 ➜ 0\n   * Level 0 ➜ 1\n   * Level 1 ➜ 2\nBefore applying the sponge to the steps, use the large sprayer to spray/soak the steps and risers well, then use the sponge."},
+  7: {title:"Washing the South escalators (Zara area)",
+      desc:"Wash the escalators and travelators – Zara area (steps and risers):\n   * Level -3 ➜ -2\n   * Level -2 ➜ -1\n   * Level -1 ➜ 0\n   * Level 0 ➜ 1\n   * Level 1 ➜ 2\nBefore applying the sponge to the steps, use the large sprayer to spray/soak the steps and risers well, then use the sponge."},
+  8: {title:"Deep washing of underground parking – Level -2",
+      desc:"T17 machine for open areas and T300 for edges, columns and hard-to-reach areas.\nCorridor: {{CULOARE}}\nTime slot: {{INTERVAL}}\nThe entire indicated corridor and all adjacent areas must be washed. Pay attention to and clean: corners, wall edges, areas around columns, spaces around hydrants and technical equipment. Any persistent oil stains or dirt must be treated additionally and cleaned before finishing the job."},
+  9: {title:"Deep washing of underground parking – Level -3",
+      desc:"T17 machine for open areas and T300 for edges, columns and hard-to-reach areas.\nCorridor: {{CULOARE}}\nTime slot: {{INTERVAL}}\nThe entire indicated corridor and all adjacent areas must be washed. Pay attention to and clean: corners, wall edges, areas around columns, spaces around hydrants and technical equipment. Any persistent oil stains or dirt must be treated additionally and cleaned before finishing the job."},
+  10: {title:"Restroom stripping – Level -1",
+       desc:"General cleaning/stripping with the Kaivac No Touch machine and SANPURID detergent: floors, sanitary fixtures, mirrors, doors, cleaning of restroom signage including panels, signs and decorative frames."},
+  11: {title:"Restroom stripping – Level 1",
+       desc:"General cleaning/stripping with the Kaivac No Touch machine and SANPURID detergent: floors, sanitary fixtures, mirrors, doors, cleaning of restroom signage including panels, signs and decorative frames."},
+  12: {title:"Restroom stripping – Level 0",
+       desc:"General cleaning/stripping with the Kaivac No Touch machine and SANPURID detergent: floors, sanitary fixtures, mirrors, doors, cleaning of restroom signage including panels, signs and decorative frames."},
+  13: {title:"Restroom stripping – Level 2",
+       desc:"General cleaning/stripping with the Kaivac No Touch machine and SANPURID detergent: floors, sanitary fixtures, mirrors, doors, cleaning of restroom signage including panels, signs and decorative frames."},
+  14: {title:"Cleaning exterior slat mats – Floreasca and Barbu Văcărescu entrances",
+       desc:"Lift all slat mats at both entrances. Thoroughly vacuum the mats and the entire surface underneath them, including edges and corners. Thoroughly wash the flooring under the mats and remove all traces of mud, sand and dirt. Wash the slat mats and clean the frames and rubber strips."},
+};
+
+const FIXED_EN = {
+  punct1Title: "FOOD COURT Area",
+  punctFix1: `🔹 All tables must be completely cleared by 22:20 at the latest.
+🔹 The trolleys from the Food Court and terrace must be moved to the sorting area by 22:30, so the areas remain completely clear overnight.
+🔹 All trash bins in the FOOD COURT area (from Gymboland to Batroun and Taco Bell) must be fully emptied. Where necessary, the inside of the bins must be washed and sanitized.
+⚠️ If there is no staff left in the collection area of the technical corridor, please place all waste collected from tables or trolleys into large black bags and take it to the trash room.
+⚠️ Please make sure no trays, food scraps or other waste remain on tables, trolleys or in the Food Court area before finishing the activity.
+🔹 At 07:00, please go help Mirela at Inditex until 10:00.`,
+  punct2Title: "MECHANIZED WASHING OF COMMON AREAS",
+  punctFix2: `🔹 Mechanized floor washing is carried out on:
+   * Level -1
+   * Level 0
+   * Level 1
+   * Level 2 (pay special attention to high-traffic areas and areas with visible marks on the floor).
+SCRUB AND WASH EVERY SINGLE TILE! (T7 machine – detergent: 1 L / tank)`,
+  punct5Title: "VACUUMING CARPETS AND CLEANING SLAT MATS",
+  punctFix5: `🔹 Vacuum all fabric carpets at the entrances.
+🔹 Remove dirt buildup from the slat mats.
+🔹 Revolving doors are washed with water and a brush.
+🔹 Ribbed doormats must be thoroughly scrubbed, rinsed with a mop using clean water, and finally wipe the rubber strip at the base of each revolving door panel.`,
+  closing: `🔚 End of shift – before leaving
+🔹 Check that all machines and tools used have been thoroughly cleaned.
+🔹 Make sure they are not damaged and are stored in the designated places.
+⚠️ Caution: Avoid hitting windows, railings, walls or other finishing elements with the machines. Any damage caused by carelessness will be charged to you. Also, use the machines carefully to prevent them from breaking down.
+⚠️ IMPORTANT: Make sure all operations are carried out correctly, completely and to a high quality standard, so that every area is visibly clean and can easily be checked at the end of the shift. Pay attention to detail and do not leave partially cleaned areas, visible stains or dirt buildup behind. The goal is that, by the end of the shift, all areas are clean, uniform and ready for the shopping center's opening.`,
+  additionalActivities: "Additional activities",
+  noActivitySelected: "(no activity selected)",
+  personInCharge: "Person in charge",
+};
+
 const punct1Title = "Zona FOOD COURT";
 const punctFix1 = `🔹 Toate mesele trebuie eliberate complet cel târziu la ora 22:20.
 🔹 Rastelurile din Food Court și de pe terasă trebuie transportate în zona de sortare până la ora 22:30, astfel încât zonele să rămână complet libere pe timpul nopții.
@@ -303,6 +375,18 @@ const CUSTOM_POINTS_KEY = 'tnCustomPoints';
 
 let customPoints = [];
 let dailyState = null;
+let currentLang = localStorage.getItem('tnLang') || 'ro';
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('tnLang', lang);
+  updateLangButtons();
+}
+
+function updateLangButtons(){
+  document.getElementById('langRoBtn').classList.toggle('active', currentLang === 'ro');
+  document.getElementById('langEnBtn').classList.toggle('active', currentLang === 'en');
+}
 
 function todayStr(){
   const d = new Date();
@@ -539,32 +623,48 @@ function renderExtraTasksList(key){
 
 function selectedText(groupId){
   const ids = dailyState[groupId] || [];
-  if(ids.length === 0) return "(nicio activitate selectată)";
+  if(ids.length === 0) return currentLang === 'en' ? FIXED_EN.noActivitySelected : "(nicio activitate selectată)";
   return ids.map(id=>{
     const a = activitati.find(x=>x.id == id);
     if(!a) return '';
-    let desc = a.desc;
+    const en = currentLang === 'en' ? activitatiEN[a.id] : null;
+    const title = en ? en.title : a.title;
+    let desc = en ? en.desc : a.desc;
     if(a.fields && a.fields.length){
       a.fields.forEach(f=>{
         const val = (dailyState.fieldValues[groupId+'_'+f.key+'_'+a.id] || '').trim() || '____';
         desc = desc.replaceAll(`{{${f.key.toUpperCase()}}}`, val);
       });
     }
-    return `*${a.title}*\n${desc}`;
+    return `*${title}*\n${desc}`;
   }).join('\n\n');
 }
 
+// pentru punctele fixe (1,2,5), mesajul folosește textul EN dacă e selectat;
+// punctele custom (adăugate de utilizator) rămân mereu în română, ca text liber
 function pointText(cfg){
-  let body;
+  let body, title = cfg.title;
   if(cfg.type === 'checklist'){
     body = selectedText(cfg.listId);
+    title = currentLang === 'en' ? FIXED_EN.additionalActivities : 'Activități suplimentare';
+  } else if(cfg.type === 'fixed'){
+    const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'] };
+    const [titleVar, bodyVar] = map[cfg.key];
+    if(currentLang === 'en'){
+      title = FIXED_EN[titleVar];
+      body = FIXED_EN[bodyVar];
+    } else {
+      title = cfg.title;
+      body = cfg.body;
+    }
   } else {
     body = cfg.body;
   }
   const extras = dailyState.extraTasks[cfg.key] || [];
   const extraBlock = extras.length ? '\n' + extras.map(t=>'➕ '+t).join('\n') : '';
   const resp = cfg.type === 'checklist' ? (dailyState.respByKey[cfg.key] || '') : '';
-  const header = resp ? `*${cfg.number}. ${cfg.title} (Responsabil: ${resp})*` : `*${cfg.number}. ${cfg.title}*`;
+  const respLabel = currentLang === 'en' ? FIXED_EN.personInCharge : 'Responsabil';
+  const header = resp ? `*${cfg.number}. ${title} (${respLabel}: ${resp})*` : `*${cfg.number}. ${title}*`;
   return `${header}\n${body}${extraBlock}`;
 }
 
@@ -572,12 +672,15 @@ function generate(){
   const dataTura = document.getElementById('dataTura').value || todayStr();
   const responsabilGeneral = document.getElementById('responsabilGeneral').value.trim();
 
-  let headerLine = `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
-  if(responsabilGeneral) headerLine += ` (Responsabil tură: ${responsabilGeneral})`;
+  let headerLine = currentLang === 'en'
+    ? `✅ Tasks – ${fmtDate(dataTura)} – Shift hours: 22:00–07:00`
+    : `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
+  if(responsabilGeneral) headerLine += currentLang === 'en' ? ` (Shift manager: ${responsabilGeneral})` : ` (Responsabil tură: ${responsabilGeneral})`;
 
   const pointsText = getAllPoints().map(pointText).join('\n\n');
+  const closingText = currentLang === 'en' ? FIXED_EN.closing : closing;
 
-  const msg = `${headerLine}\n\n${pointsText}\n\n${closing}`;
+  const msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
   document.getElementById('output').value = msg;
   document.getElementById('copyStatus').textContent = '';
 
@@ -695,6 +798,7 @@ function renderAll(){
 customPoints = loadCustomPoints();
 dailyState = loadState();
 renderAll();
+updateLangButtons();
 
 document.getElementById('dataTura').addEventListener('change', ()=>{
   dailyState.date = document.getElementById('dataTura').value;
