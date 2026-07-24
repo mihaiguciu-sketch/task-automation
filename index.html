@@ -599,16 +599,9 @@ function copyOutput(){
   setTimeout(()=>document.getElementById('copyStatus').textContent='', 2000);
 }
 
-const WA_TEXT_LIMIT = 1900; // wa.me refuză/eșuează silențios peste ~2000 caractere encodate
-
 function buildWhatsappUrl(){
-  const out = document.getElementById('output');
-  if(!out.value.trim()){ generate(); }
   const phoneRaw = document.getElementById('telefonWA').value.trim().replace(/[^0-9]/g,'');
-  const base = phoneRaw ? `https://wa.me/${phoneRaw}` : `https://wa.me/`;
-  const encoded = encodeURIComponent(out.value);
-  const tooLong = encoded.length > WA_TEXT_LIMIT;
-  return { url: tooLong ? base : `${base}?text=${encoded}`, tooLong };
+  return phoneRaw ? `https://wa.me/${phoneRaw}` : `https://wa.me/`;
 }
 
 function prepWhatsapp(e){
@@ -617,7 +610,7 @@ function prepWhatsapp(e){
   out.select();
   document.execCommand('copy');
 
-  const { url, tooLong } = buildWhatsappUrl();
+  const url = buildWhatsappUrl();
   const link = document.getElementById('waBtn');
   link.href = url;
   const fallback = document.getElementById('waFallbackLink');
@@ -625,11 +618,7 @@ function prepWhatsapp(e){
 
   const hint = document.getElementById('waHint');
   hint.style.display = 'block';
-  if(tooLong){
-    hint.innerHTML = '📋 Mesajul e prea lung ca să încapă pre-completat în link și a fost <strong>copiat automat</strong> în clipboard. După ce se deschide conversația, apasă lung în caseta de scris și alege <strong>Lipește</strong>. Dacă nu s-a deschis nimic, dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'" target="_blank" rel="noopener">deschide WhatsApp</a>';
-  } else {
-    hint.innerHTML = 'Dacă nu s-a deschis nimic (browserul a blocat fereastra), dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'" target="_blank" rel="noopener">deschide WhatsApp cu mesajul</a>';
-  }
+  hint.innerHTML = '📋 Mesajul a fost <strong>copiat automat</strong> în clipboard (e prea lung ca să încapă pre-completat în link). După ce se deschide conversația, apasă lung în caseta de scris și alege <strong>Lipește</strong>. Dacă nu s-a deschis nimic, dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'" target="_blank" rel="noopener">deschide WhatsApp</a>';
   return true;
 }
 
