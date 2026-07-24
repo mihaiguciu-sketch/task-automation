@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator Mesaj Tură Noapte</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --accent:#0f7a4c; --accent-dark:#0b5c39;
+    --text:#1f2933; --muted:#6b7280; --border:#e2e5e9; --wa:#25D366; --wa-dark:#1ea952;
+    --danger:#c0392b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family: "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--text);
+    margin:0; padding:24px; line-height:1.45;
+  }
+  h1{font-size:20px; margin-bottom:4px;}
+  p.sub{color:var(--muted); margin-top:0; margin-bottom:20px; font-size:14px;}
+  .layout{display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;}
+  .col{flex:1 1 380px; min-width:320px;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:16px 18px; margin-bottom:16px;
+  }
+  .card h2{font-size:15px; margin:0 0 10px 0; color:var(--accent-dark); display:flex; align-items:center; gap:8px;}
+  .point-card h2{justify-content:space-between;}
+  .point-title{display:flex; align-items:center; gap:8px;}
+  .del-point{
+    background:none; border:1px solid var(--danger); color:var(--danger);
+    border-radius:6px; font-size:11px; padding:3px 8px; cursor:pointer;
+  }
+  .del-point:hover{background:#fceceb;}
+  .point-body{
+    font-size:13px; color:#3d4854; white-space:pre-wrap; background:#fafbfb;
+    border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;
+  }
+  .item{
+    border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px;
+    cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .item:hover{background:#f9fbfa;}
+  .item.selected{border-color:var(--accent); background:#eef8f2;}
+  .item label{display:flex; gap:10px; align-items:flex-start; cursor:pointer; font-size:13.5px;}
+  .item input[type=checkbox]{margin-top:3px; flex-shrink:0;}
+  .item .title{font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .item .desc{display:none; margin-top:6px; font-size:12.5px; color:var(--muted); white-space:pre-wrap;}
+  .item.selected .desc{display:block;}
+  .last-used{
+    font-size:10.5px; font-weight:500; color:#9a6b00; background:#fff3d6;
+    border-radius:10px; padding:1px 7px;
+  }
+  .last-used.old{color:#0b5c39; background:#e3f5ec;}
+  .extra-fields{display:none; margin-top:8px; gap:8px; flex-wrap:wrap;}
+  .item.selected .extra-fields{display:flex;}
+  .extra-fields label{flex-direction:column; align-items:stretch; gap:2px; font-size:12px; flex:1 1 140px;}
+  .extra-fields input[type=text]{
+    padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:12.5px;
+  }
+  .header-fields{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:6px;}
+  .header-fields .field{flex:1 1 160px; display:flex; flex-direction:column; gap:4px;}
+  .header-fields label{font-size:12px; color:var(--muted); font-weight:600;}
+  .header-fields input{padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13.5px;}
+  .assign-row{display:flex; gap:10px; margin:10px 0 4px 0; flex-wrap:wrap;}
+  .assign-row .field{flex:1 1 160px; display:flex; flex-direction:column; gap:4px;}
+  .assign-row label{font-size:11.5px; color:var(--muted); font-weight:600;}
+  .assign-row input{padding:6px 8px; border:1px solid var(--border); border-radius:6px; font-size:12.5px;}
+
+  .extra-tasks{margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;}
+  .extra-tasks-title{font-size:11.5px; color:var(--muted); font-weight:600; margin-bottom:6px;}
+  .extra-task-row{
+    display:flex; align-items:center; gap:8px; background:#fbfaf3; border:1px solid #eee0b0;
+    border-radius:6px; padding:6px 10px; margin-bottom:6px; font-size:12.5px;
+  }
+  .extra-task-row span{flex:1;}
+  .extra-task-row button{
+    background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px; padding:0 4px;
+  }
+  .add-task-row{display:flex; gap:8px; margin-top:6px;}
+  .add-task-row input{
+    flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12.5px;
+  }
+  .add-task-row button{
+    background:#fff; border:1px solid var(--accent); color:var(--accent-dark);
+    border-radius:6px; padding:6px 12px; font-size:12.5px; cursor:pointer; white-space:nowrap;
+  }
+  .add-task-row button:hover{background:#eef8f2;}
+
+  button.generate{
+    background:var(--accent); color:#fff; border:none; padding:12px 20px; border-radius:8px;
+    font-size:14px; font-weight:600; cursor:pointer; width:100%;
+  }
+  button.generate:hover{background:var(--accent-dark);}
+  button.clear-day{
+    background:#fff; border:1px solid #c8ccd1; color:var(--muted);
+    padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; width:100%; margin-top:8px;
+  }
+  button.clear-day:hover{background:#f2f3f4;}
+  button.add-point-toggle{
+    background:#fff; border:1px dashed var(--accent); color:var(--accent-dark);
+    padding:10px 14px; border-radius:8px; cursor:pointer; font-size:13.5px; width:100%;
+    margin-bottom:16px; font-weight:600;
+  }
+  button.add-point-toggle:hover{background:#eef8f2;}
+  .add-point-panel{
+    display:none; background:var(--card); border:1px solid var(--accent); border-radius:10px;
+    padding:16px 18px; margin-bottom:16px;
+  }
+  .add-point-panel.open{display:block;}
+  .add-point-panel .field{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
+  .add-point-panel label{font-size:12px; color:var(--muted); font-weight:600;}
+  .add-point-panel input, .add-point-panel textarea{
+    padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; font-family:inherit;
+  }
+  .add-point-panel textarea{min-height:100px; resize:vertical;}
+  .add-point-actions{display:flex; gap:10px;}
+  .add-point-actions button{
+    padding:8px 16px; border-radius:8px; font-size:13px; cursor:pointer; border:none;
+  }
+  .btn-save{background:var(--accent); color:#fff;}
+  .btn-save:hover{background:var(--accent-dark);}
+  .btn-cancel{background:#fff; border:1px solid var(--border) !important; color:var(--muted);}
+  .btn-cancel:hover{background:#f2f3f4;}
+
+  textarea#output{
+    width:100%; min-height:380px; font-family: Consolas, monospace; font-size:13px;
+    padding:14px; border-radius:8px; border:1px solid var(--border); resize:vertical;
+    background:#fbfbfb;
+  }
+  .copybar{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+  button.copy{
+    background:#fff; border:1px solid var(--accent); color:var(--accent-dark);
+    padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px;
+  }
+  button.copy:hover{background:#eef8f2;}
+  .whatsapp{
+    background:var(--wa); border:1px solid var(--wa); color:#fff;
+    padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;
+    display:inline-block; text-decoration:none;
+  }
+  .whatsapp:hover{background:var(--wa-dark);}
+  .fixed-note{font-size:12.5px; color:var(--muted); margin-top:0; align-self:center;}
+  .badge{
+    display:inline-block; font-size:11px; background:var(--accent); color:#fff;
+    border-radius:12px; padding:1px 8px; margin-left:6px;
+  }
+  @media (max-width: 700px){
+    body{padding:14px;}
+    .layout{flex-direction:column;}
+    .col{min-width:0;}
+    .header-fields, .assign-row, .add-task-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<h1>Generator Mesaj – Sarcini Tură Noapte</h1>
+<p class="sub">Bifează activitățile din Anexă pentru Punctul 3 și Punctul 4. Punctele 1, 2 și 5 sunt fixe. Poți adăuga puncte noi sau task-uri suplimentare la orice punct cu butoanele de mai jos.</p>
+
+<div class="card">
+  <div class="header-fields">
+    <div class="field">
+      <label for="dataTura">Data turei</label>
+      <input type="date" id="dataTura">
+    </div>
+    <div class="field">
+      <label for="responsabilGeneral">Responsabil tură (opțional)</label>
+      <input type="text" id="responsabilGeneral" placeholder="ex: Ana Popescu">
+    </div>
+    <div class="field">
+      <label for="telefonWA">Telefon WhatsApp (opțional, cu prefix țară)</label>
+      <input type="text" id="telefonWA" placeholder="ex: 40712345678">
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="col">
+    <div id="pointsContainer"></div>
+
+    <button class="add-point-toggle" onclick="toggleAddPointPanel()">+ Adaugă punct nou</button>
+    <div class="add-point-panel" id="addPointPanel">
+      <div class="field">
+        <label for="newPointTitle">Titlul punctului</label>
+        <input type="text" id="newPointTitle" placeholder="ex: Curățare zonă tehnică Nivel -1">
+      </div>
+      <div class="field">
+        <label for="newPointBody">Conținutul punctului</label>
+        <textarea id="newPointBody" placeholder="Descrie ce trebuie făcut la acest punct..."></textarea>
+      </div>
+      <div class="add-point-actions">
+        <button class="btn-save" onclick="saveNewPoint()">Salvează punctul</button>
+        <button class="btn-cancel" onclick="toggleAddPointPanel(false)">Anulează</button>
+      </div>
+    </div>
+
+    <button class="generate" onclick="generate()">Generează mesajul</button>
+    <button class="clear-day" onclick="clearDay()">Golește selecția zilei curente</button>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2>Mesaj generat</h2>
+      <textarea id="output" readonly placeholder="Apasă „Generează mesajul” după ce ai bifat activitățile pentru punctele 3 și 4."></textarea>
+      <div class="copybar">
+        <button class="copy" onclick="copyOutput()">Copiază mesajul</button>
+        <a id="waBtn" class="whatsapp" href="#" target="_blank" rel="noopener" onclick="return prepWhatsapp(event)">Trimite pe WhatsApp</a>
+        <span id="copyStatus" class="fixed-note"></span>
+      </div>
+      <p id="waHint" class="fixed-note" style="display:none; margin-top:8px;">
+        Dacă nu s-a deschis nimic (browserul a blocat fereastra), dă click direct pe acest link:
+        <a id="waFallbackLink" href="#" target="_blank" rel="noopener">deschide WhatsApp cu mesajul</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const activitati = [
+  {id:1, title:"Decaparea esplanadelor – intrare Calea Floreasca",
+   desc:"Decapare pardoseala esplanada exterioara FLOREASCA cu detergent TRUCK CLEAN si NUFAR doar unde sunt pete.\n• Aplicarea soluției decapante pe pardoseala (la 1 galeata mica de 10L puneti 0.5L de solutie decapanta);\n• Timp de acționare conform procedurii minim 15 minute trebuie sa ramana detergentul pe pardoseala;\n• Frecare mecanizată mașină automată T3 sau T7 sau manuala cu talpa - insistati in zonele cu pete;\n• Aspirarea rezidurilor lichide;\n• Clătire cu masina cu apa curata fara detergent (pentru a preveni alunecarea)."},
+  {id:2, title:"Decaparea esplanadelor – intrare Barbu Văcărescu",
+   desc:"Decapare pardoseala esplanada exterioara BARBU VACARESCU cu detergent TRUCK CLEAN si NUFAR doar unde sunt pete.\n• Aplicarea soluției decapante pe pardoseala (la 1 galeata mica de 10L puneti 0.5L de solutie decapanta);\n• Timp de acționare conform procedurii minim 15 minute trebuie sa ramana detergentul pe pardoseala;\n• Frecare mecanizată mașină automată T3 sau T7 sau manuala cu talpa - insistati in zonele cu pete;\n• Aspirarea rezidurilor lichide;\n• Clătire cu masina cu apa curata fara detergent (pentru a preveni alunecarea)."},
+  {id:3, title:"Spălare rampă acces parcare subterană Barbu Văcărescu (stradă → nivel -3)",
+   desc:"Cu peria de mână și utilajul T300, spălați foarte bine pardoseala de pe rampa de acces auto a parcării subterane – acces BARBU VACARESCU.\n• Insistați în zonele foarte murdare și mai ales pe marginile albastre, dar și pe zona centrală dintre stâlpișorii de separare a benzilor.\n• Acordați atenție zonelor cu acumulări de ulei și murdărie persistentă (urme de anvelope).\n• Dacă este necesar, repetați spălarea în zonele unde murdăria nu este îndepărtată complet din prima trecere.\n• Folosiți cantitatea corectă de detergent și nu lăsați exces de apă pe rampă (risc de alunecare).\n• La final, verificați vizual rampa pe toată lungimea și asigurați-vă că nu au rămas zone necurățate."},
+  {id:4, title:"Spălare rampă acces parcare subterană Floreasca (stradă → nivel -3)",
+   desc:"Cu peria de mână și utilajul T300, spălați foarte bine pardoseala de pe rampa de acces auto a parcării subterane – acces FLOREASCA.\n• Insistați în zonele foarte murdare și mai ales pe marginile albastre, dar și pe zona centrală dintre stâlpișorii de separare a benzilor.\n• Acordați atenție zonelor cu acumulări de ulei și murdărie persistentă (urme de anvelope).\n• Dacă este necesar, repetați spălarea în zonele unde murdăria nu este îndepărtată complet din prima trecere.\n• Folosiți cantitatea corectă de detergent și nu lăsați exces de apă pe rampă (risc de alunecare).\n• La final, verificați vizual rampa pe toată lungimea și asigurați-vă că nu au rămas zone necurățate."},
+  {id:5, title:"Decapare Food Court",
+   desc:"Decapare cu detergent TRUCK CLEANER.\nZona de lucru: Coridorul din fața restaurantelor (Intrare Toalete – Burger King – Chopstix – Burton – Toans, inclusiv intrările către spațiile tehnice din zona Chopstix și Toans); Coridorul de la McDonald's până la Costa Coffee, inclusiv zona până la balustrada din colț (fostul loc de joacă).\nEtape: aplicarea soluției decapante pe toate zonele stabilite; timp minim de acționare 10 minute; frecarea manuală a pardoselii cu talpa 10-15 minute, insistând pe pete și depuneri persistente; aspirarea reziduurilor lichide cu mașina T300; clătirea și neutralizarea suprafeței cu apă curată; uscarea completă a zonei înainte de finalizare."},
+  {id:6, title:"Spălare scări rulante Nord (zona Carrefour)",
+   desc:"Spălare scări rulante și travelatoare – zona Carrefour (trepte și contratrepte):\n   * Nivel -3 ➜ -2\n   * Nivel -2 ➜ -1\n   * Nivel -1 ➜ 0\n   * Nivel 0 ➜ 1\n   * Nivel 1 ➜ 2\nÎnainte de a pune buretele pe scări, folosiți pulverizatorul mare pentru a stropi/înmuia bine treptele și contratreptele, apoi folosiți buretele."},
+  {id:7, title:"Spălare scări rulante Sud (zona Zara)",
+   desc:"Spălare scări rulante și travelatoare – zona Zara (trepte și contratrepte):\n   * Nivel -3 ➜ -2\n   * Nivel -2 ➜ -1\n   * Nivel -1 ➜ 0\n   * Nivel 0 ➜ 1\n   * Nivel 1 ➜ 2\nÎnainte de a pune buretele pe scări, folosiți pulverizatorul mare pentru a stropi/înmuia bine treptele și contratreptele, apoi folosiți buretele."},
+  {id:8, title:"Spălare în profunzime parcare subterană Nivel -2", hasFields:true,
+   desc:"Mașina T17 pentru zonele deschise și T300 pentru margini, stâlpi și zone greu accesibile.\nCuloar: {{CULOARE}}\nInterval: {{INTERVAL}}\nSe va spăla integral culoarul indicat și toate zonele adiacente. Se vor curăța: colțurile, marginile pereților, zonele din jurul stâlpilor, spațiile din jurul hidranților și echipamentelor tehnice. Orice pete persistente de ulei sau murdărie trebuie tratate suplimentar și curățate înainte de finalizarea lucrării."},
+  {id:9, title:"Spălare în profunzime parcare subterană Nivel -3", hasFields:true,
+   desc:"Mașina T17 pentru zonele deschise și T300 pentru margini, stâlpi și zone greu accesibile.\nCuloar: {{CULOARE}}\nInterval: {{INTERVAL}}\nSe va spăla integral culoarul indicat și toate zonele adiacente. Se vor curăța: colțurile, marginile pereților, zonele din jurul stâlpilor, spațiile din jurul hidranților și echipamentelor tehnice. Orice pete persistente de ulei sau murdărie trebuie tratate suplimentar și curățate înainte de finalizarea lucrării."},
+  {id:10, title:"Decapare grup sanitar Nivel -1",
+   desc:"Curățenie generală/decapare cu utilajul Kaivac No Touch și detergent SANPURID: pardoseli, obiecte sanitare, oglinzi, uși, curățarea semnalisticii toaletelor inclusiv panourile, indicatoarele și ramele decorative."},
+  {id:11, title:"Decapare grup sanitar Nivel 1",
+   desc:"Curățenie generală/decapare cu utilajul Kaivac No Touch și detergent SANPURID: pardoseli, obiecte sanitare, oglinzi, uși, curățarea semnalisticii toaletelor inclusiv panourile, indicatoarele și ramele decorative."},
+  {id:12, title:"Decapare grup sanitar Nivel 0",
+   desc:"Curățenie generală/decapare cu utilajul Kaivac No Touch și detergent SANPURID: pardoseli, obiecte sanitare, oglinzi, uși, curățarea semnalisticii toaletelor inclusiv panourile, indicatoarele și ramele decorative."},
+  {id:13, title:"Decapare grup sanitar Nivel 2",
+   desc:"Curățenie generală/decapare cu utilajul Kaivac No Touch și detergent SANPURID: pardoseli, obiecte sanitare, oglinzi, uși, curățarea semnalisticii toaletelor inclusiv panourile, indicatoarele și ramele decorative."},
+  {id:14, title:"Curățare covoare lamelare exterior – intrările Floreasca și Barbu Văcărescu",
+   desc:"Ridicați toate covoarele lamelare de la ambele intrări. Aspirați foarte bine covoarele și întreaga suprafață de sub ele, inclusiv marginile și colțurile. Spălați temeinic pardoseala de sub covoare și îndepărtați toate urmele de noroi, nisip și murdărie. Spălați covoarele lamelare și curățați ramele și benzile de cauciuc."},
+];
+
+const punct1Title = "Zona FOOD COURT";
+const punctFix1 = `🔹 Toate mesele trebuie eliberate complet cel târziu la ora 22:20.
+🔹 Rastelurile din Food Court și de pe terasă trebuie transportate în zona de sortare până la ora 22:30, astfel încât zonele să rămână complet libere pe timpul nopții.
+🔹 Toate coșurile de gunoi din zona FOOD COURT (de la Gymboland până la Batroun și Taco Bell) trebuie golite complet. Acolo unde este necesar, interiorul coșurilor trebuie spălat și igienizat.
+⚠️ Dacă nu mai este personal în zona de colectare de pe coridorul tehnic, vă rog să puneți toate deșeurile colectate de pe mese sau rastele în saci mari negri și să le transportați la camera de gunoi.
+⚠️ Vă rog să vă asigurați că nu mai există tăvi, resturi alimentare sau alte deșeuri rămase pe mese, rastele sau în zona Food Court înainte de finalizarea activității.
+🔹 La ora 07:00, vă rog să mergeți să o ajutați pe Mirela la Inditex, până la ora 10:00.`;
+
+const punct2Title = "SPĂLARE MECANIZATĂ SPAȚII COMUNE";
+const punctFix2 = `🔹 Spălarea mecanizată a pardoselilor se efectuează pe:
+   * Nivelul -1
+   * Nivelul 0
+   * Nivelul 1
+   * Nivelul 2 (insistați în special în zonele cu trafic intens și acolo unde există urme vizibile pe pardoseală).
+INSISTAȚI ȘI SPĂLAȚI FIECARE PLACĂ DE GRESIE! (Mașina T7 – detergent: 1 L / bazin)`;
+
+const punct5Title = "ASPIRAREA MOCHETELOR ȘI CURĂȚAREA COVOARELOR LAMELARE";
+const punctFix5 = `🔹 Aspirați toate covoarele textile de la intrări.
+🔹 Îndepărtați murdăria acumulată în covoarele lamelare.
+🔹 Ușile rotative se spală cu apă și perie.
+🔹 Preșurile striate se freacă temeinic, se clătesc cu mopul folosind apă curată, iar la final se șterge banda de cauciuc de la baza fiecărui panou al ușilor rotative.`;
+
+const closing = `🔚 Sfârșit de tură – înainte de plecare
+🔹 Verificați ca toate utilajele și uneltele folosite să fie curățate temeinic.
+🔹 Asigurați-vă că nu sunt deteriorate și că sunt depozitate în locurile desemnate.
+⚠️ Atenție: Evitați lovirea geamurilor, balustradelor, pereților sau a altor elemente de finisaj cu utilajele. Orice deteriorare produsă din neatenție atrage suportarea costurilor. De asemenea, utilizați utilajele cu grijă pentru a preveni defectarea acestora.
+⚠️ IMPORTANT: Asigurați-vă că toate operațiunile sunt efectuate corect, complet și la un standard ridicat de calitate, astfel încât fiecare zonă să fie vizibil curată și să poată fi verificată cu ușurință la finalul turei. Insistați asupra detaliilor și nu lăsați în urmă zone parțial curățate, pete vizibile sau depuneri de murdărie. Scopul este ca, la finalul programului, toate spațiile să fie curate, uniforme și pregătite pentru deschiderea centrului comercial.`;
+
+const POINTS_FIXED = [
+  {key:'p1', title:punct1Title, type:'fixed', body:punctFix1},
+  {key:'p2', title:punct2Title, type:'fixed', body:punctFix2},
+  {key:'p3', title:'Activități suplimentare', type:'checklist', listId:'list3'},
+  {key:'p4', title:'Activități suplimentare', type:'checklist', listId:'list4'},
+  {key:'p5', title:punct5Title, type:'fixed', body:punctFix5},
+];
+
+const HISTORY_KEY = 'tnHistory';
+const STATE_KEY = 'tnState';
+const CUSTOM_POINTS_KEY = 'tnCustomPoints';
+
+let customPoints = [];
+let dailyState = null;
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveHistory(h){ localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }
+
+function loadCustomPoints(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_POINTS_KEY)) || []; }catch(e){ return []; }
+}
+function saveCustomPoints(){ localStorage.setItem(CUSTOM_POINTS_KEY, JSON.stringify(customPoints)); }
+
+function defaultState(){
+  return {
+    date: todayStr(),
+    responsabilGeneral: '',
+    telefonWA: '',
+    list3: [],
+    list4: [],
+    fieldValues: {},
+    respByKey: {},
+    extraTasks: {}
+  };
+}
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STATE_KEY));
+    if(s && s.date === todayStr()) return s;
+  }catch(e){}
+  return defaultState();
+}
+function saveState(){ localStorage.setItem(STATE_KEY, JSON.stringify(dailyState)); }
+
+function getAllPoints(){
+  const pts = POINTS_FIXED.map((p,i)=>({...p, number:i+1, custom:false}));
+  customPoints.forEach((cp,i)=>{
+    pts.push({key:'custom_'+cp.id, title:cp.title, type:'custom', body:cp.body, number:POINTS_FIXED.length+i+1, custom:true, customId:cp.id});
+  });
+  return pts;
+}
+
+function toggleAddPointPanel(forceOpen){
+  const panel = document.getElementById('addPointPanel');
+  const shouldOpen = forceOpen !== undefined ? forceOpen : !panel.classList.contains('open');
+  panel.classList.toggle('open', shouldOpen);
+  if(!shouldOpen){
+    document.getElementById('newPointTitle').value = '';
+    document.getElementById('newPointBody').value = '';
+  }
+}
+
+function saveNewPoint(){
+  const title = document.getElementById('newPointTitle').value.trim();
+  const body = document.getElementById('newPointBody').value.trim();
+  if(!title){ alert('Te rog completează un titlu pentru punctul nou.'); return; }
+  customPoints.push({id: Date.now(), title, body: body || '(fără descriere)'});
+  saveCustomPoints();
+  toggleAddPointPanel(false);
+  renderAll();
+}
+
+function deleteCustomPoint(id){
+  if(!confirm('Ștergi definitiv acest punct din șablon?')) return;
+  customPoints = customPoints.filter(cp => cp.id !== id);
+  saveCustomPoints();
+  delete dailyState.extraTasks['custom_'+id];
+  saveState();
+  renderAll();
+}
+
+function buildPointCard(cfg){
+  const card = document.createElement('div');
+  card.className = 'card point-card';
+
+  const delBtnHtml = cfg.custom ? `<button class="del-point" onclick="deleteCustomPoint(${cfg.customId})">🗑 Șterge punctul</button>` : '';
+  const respFieldHtml = cfg.type === 'checklist' ? `
+      <div class="assign-row">
+        <div class="field">
+          <label for="resp_${cfg.key}">Responsabil (opțional)</label>
+          <input type="text" id="resp_${cfg.key}" placeholder="nume angajat" oninput="onRespInput('${cfg.key}')">
+        </div>
+      </div>` : '';
+
+  card.innerHTML = `
+    <h2><span class="point-title">${cfg.number}. ${cfg.title}${cfg.type==='checklist' ? ' <span class="badge" id="count_'+cfg.key+'">0</span>' : ''}</span>${delBtnHtml}</h2>
+    ${cfg.type !== 'checklist' ? `<div class="point-body">${cfg.body}</div>` : `<div id="${cfg.listId}"></div>${respFieldHtml}`}
+    <div class="extra-tasks">
+      <div class="extra-tasks-title">Task-uri suplimentare adăugate pentru noaptea asta:</div>
+      <div id="extraList_${cfg.key}"></div>
+      <div class="add-task-row">
+        <input type="text" id="newTaskInput_${cfg.key}" placeholder="scrie un task nou și apasă Adaugă">
+        <button onclick="addExtraTask('${cfg.key}')">+ Adaugă task</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function renderPoints(){
+  const container = document.getElementById('pointsContainer');
+  container.innerHTML = '';
+  getAllPoints().forEach(cfg=>{
+    container.appendChild(buildPointCard(cfg));
+    if(cfg.type === 'checklist'){
+      buildChecklist(cfg.listId, cfg.listId);
+    }
+    renderExtraTasksList(cfg.key);
+  });
+}
+
+function buildChecklist(containerId, groupName){
+  const el = document.getElementById(containerId);
+  const history = loadHistory();
+  activitati.forEach(a=>{
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.id = groupName+'_item_'+a.id;
+
+    let lastUsedHtml = '';
+    if(history[a.id]){
+      const days = Math.floor((new Date(todayStr()) - new Date(history[a.id])) / 86400000);
+      const cls = days >= 3 ? 'old' : '';
+      lastUsedHtml = `<span class="last-used ${cls}">ultima dată: ${fmtDate(history[a.id])}</span>`;
+    }
+
+    let extraFieldsHtml = '';
+    if(a.hasFields){
+      extraFieldsHtml = `
+        <div class="extra-fields">
+          <label>Culoar
+            <input type="text" id="${groupName}_culoare_${a.id}" placeholder="ex: PORTOCALIU" oninput="onFieldInput('${groupName}_culoare_${a.id}')">
+          </label>
+          <label>Interval orar
+            <input type="text" id="${groupName}_interval_${a.id}" placeholder="ex: 23:00 - 00:30" oninput="onFieldInput('${groupName}_interval_${a.id}')">
+          </label>
+        </div>`;
+    }
+
+    item.innerHTML = `
+      <label>
+        <input type="checkbox" data-group="${groupName}" data-id="${a.id}" onchange="onToggle(this)">
+        <div style="width:100%">
+          <div class="title">${a.id}. ${a.title} ${lastUsedHtml}</div>
+          <div class="desc">${a.desc.replace('{{CULOARE}}','____').replace('{{INTERVAL}}','____')}</div>
+          ${extraFieldsHtml}
+        </div>
+      </label>`;
+    item.addEventListener('click', (e)=>{
+      if(e.target.tagName !== 'INPUT'){
+        const cb = item.querySelector('input[type=checkbox]');
+        cb.checked = !cb.checked;
+        onToggle(cb);
+      }
+    });
+    el.appendChild(item);
+  });
+}
+
+function onToggle(cb){
+  const item = cb.closest('.item');
+  item.classList.toggle('selected', cb.checked);
+  const group = cb.dataset.group;
+  const id = cb.dataset.id;
+  const arr = dailyState[group] || [];
+  if(cb.checked){
+    if(!arr.includes(id)) arr.push(id);
+  } else {
+    const idx = arr.indexOf(id);
+    if(idx > -1) arr.splice(idx,1);
+  }
+  dailyState[group] = arr;
+  saveState();
+  updateCounts();
+}
+
+function onFieldInput(fieldId){
+  dailyState.fieldValues[fieldId] = document.getElementById(fieldId).value;
+  saveState();
+}
+
+function onRespInput(key){
+  dailyState.respByKey[key] = document.getElementById('resp_'+key).value;
+  saveState();
+}
+
+function updateCounts(){
+  ['p3','p4'].forEach(key=>{
+    const el = document.getElementById('count_'+key);
+    if(el) el.textContent = (dailyState[key] || []).length;
+  });
+}
+
+function addExtraTask(key){
+  const input = document.getElementById('newTaskInput_'+key);
+  const val = input.value.trim();
+  if(!val) return;
+  if(!dailyState.extraTasks[key]) dailyState.extraTasks[key] = [];
+  dailyState.extraTasks[key].push(val);
+  input.value = '';
+  saveState();
+  renderExtraTasksList(key);
+}
+
+function removeExtraTask(key, idx){
+  dailyState.extraTasks[key].splice(idx,1);
+  saveState();
+  renderExtraTasksList(key);
+}
+
+function renderExtraTasksList(key){
+  const el = document.getElementById('extraList_'+key);
+  if(!el) return;
+  el.innerHTML = '';
+  (dailyState.extraTasks[key] || []).forEach((task, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'extra-task-row';
+    row.innerHTML = `<span>➕ ${task}</span><button onclick="removeExtraTask('${key}', ${idx})">✕</button>`;
+    el.appendChild(row);
+  });
+}
+
+function selectedText(groupId){
+  const ids = dailyState[groupId] || [];
+  if(ids.length === 0) return "(nicio activitate selectată)";
+  return ids.map(id=>{
+    const a = activitati.find(x=>x.id == id);
+    if(!a) return '';
+    let desc = a.desc;
+    if(a.hasFields){
+      const culoare = (dailyState.fieldValues[groupId+'_culoare_'+a.id] || '').trim() || '____';
+      const interval = (dailyState.fieldValues[groupId+'_interval_'+a.id] || '').trim() || '____';
+      desc = desc.replace('{{CULOARE}}', culoare).replace('{{INTERVAL}}', interval);
+    }
+    return `*${a.title}*\n${desc}`;
+  }).join('\n\n');
+}
+
+function pointText(cfg){
+  let body;
+  if(cfg.type === 'checklist'){
+    body = selectedText(cfg.listId);
+  } else {
+    body = cfg.body;
+  }
+  const extras = dailyState.extraTasks[cfg.key] || [];
+  const extraBlock = extras.length ? '\n' + extras.map(t=>'➕ '+t).join('\n') : '';
+  const resp = cfg.type === 'checklist' ? (dailyState.respByKey[cfg.key] || '') : '';
+  const header = resp ? `*${cfg.number}. ${cfg.title} (Responsabil: ${resp})*` : `*${cfg.number}. ${cfg.title}*`;
+  return `${header}\n${body}${extraBlock}`;
+}
+
+function generate(){
+  const dataTura = document.getElementById('dataTura').value || todayStr();
+  const responsabilGeneral = document.getElementById('responsabilGeneral').value.trim();
+
+  let headerLine = `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
+  if(responsabilGeneral) headerLine += ` (Responsabil tură: ${responsabilGeneral})`;
+
+  const pointsText = getAllPoints().map(pointText).join('\n\n');
+
+  const msg = `${headerLine}\n\n${pointsText}\n\n${closing}`;
+  document.getElementById('output').value = msg;
+  document.getElementById('copyStatus').textContent = '';
+
+  // actualizează istoricul de rotație pentru activitățile bifate la 3 și 4
+  const history = loadHistory();
+  (dailyState.list3 || []).concat(dailyState.list4 || []).forEach(id=>{
+    history[id] = dataTura;
+  });
+  saveHistory(history);
+  refreshLastUsedBadges();
+}
+
+function refreshLastUsedBadges(){
+  const history = loadHistory();
+  document.querySelectorAll('.item .title').forEach(titleEl=>{
+    const existing = titleEl.querySelector('.last-used');
+    if(existing) existing.remove();
+  });
+  document.querySelectorAll('.item').forEach(item=>{
+    const id = item.id.split('_item_')[1];
+    if(history[id]){
+      const days = Math.floor((new Date(todayStr()) - new Date(history[id])) / 86400000);
+      const cls = days >= 3 ? 'old' : '';
+      const span = document.createElement('span');
+      span.className = 'last-used ' + cls;
+      span.textContent = 'ultima dată: ' + fmtDate(history[id]);
+      item.querySelector('.title').appendChild(span);
+    }
+  });
+}
+
+function copyOutput(){
+  const out = document.getElementById('output');
+  if(!out.value.trim()){ generate(); }
+  out.select();
+  document.execCommand('copy');
+  document.getElementById('copyStatus').textContent = 'Copiat!';
+  setTimeout(()=>document.getElementById('copyStatus').textContent='', 2000);
+}
+
+function buildWhatsappUrl(){
+  const out = document.getElementById('output');
+  if(!out.value.trim()){ generate(); }
+  const phoneRaw = document.getElementById('telefonWA').value.trim().replace(/[^0-9]/g,'');
+  const text = encodeURIComponent(out.value);
+  return phoneRaw ? `https://wa.me/${phoneRaw}?text=${text}` : `https://wa.me/?text=${text}`;
+}
+
+function prepWhatsapp(e){
+  const url = buildWhatsappUrl();
+  const link = document.getElementById('waBtn');
+  link.href = url;
+  const fallback = document.getElementById('waFallbackLink');
+  fallback.href = url;
+  document.getElementById('waHint').style.display = 'block';
+  return true;
+}
+
+function clearDay(){
+  dailyState = defaultState();
+  saveState();
+  document.getElementById('output').value = '';
+  renderAll();
+}
+
+function applyStateToDom(){
+  document.getElementById('dataTura').value = dailyState.date;
+  document.getElementById('responsabilGeneral').value = dailyState.responsabilGeneral || '';
+  document.getElementById('telefonWA').value = dailyState.telefonWA || '';
+
+  (dailyState.list3 || []).forEach(id=>{
+    const cb = document.querySelector(`#list3 input[data-id="${id}"]`);
+    if(cb){ cb.checked = true; cb.closest('.item').classList.add('selected'); }
+  });
+  (dailyState.list4 || []).forEach(id=>{
+    const cb = document.querySelector(`#list4 input[data-id="${id}"]`);
+    if(cb){ cb.checked = true; cb.closest('.item').classList.add('selected'); }
+  });
+  Object.entries(dailyState.fieldValues || {}).forEach(([fieldId, val])=>{
+    const el = document.getElementById(fieldId);
+    if(el) el.value = val;
+  });
+  Object.entries(dailyState.respByKey || {}).forEach(([key, val])=>{
+    const el = document.getElementById('resp_'+key);
+    if(el) el.value = val;
+  });
+  updateCounts();
+}
+
+function renderAll(){
+  renderPoints();
+  applyStateToDom();
+}
+
+customPoints = loadCustomPoints();
+dailyState = loadState();
+renderAll();
+
+document.getElementById('dataTura').addEventListener('change', ()=>{
+  dailyState.date = document.getElementById('dataTura').value;
+  saveState();
+});
+document.getElementById('responsabilGeneral').addEventListener('input', ()=>{
+  dailyState.responsabilGeneral = document.getElementById('responsabilGeneral').value;
+  saveState();
+});
+document.getElementById('telefonWA').addEventListener('input', ()=>{
+  dailyState.telefonWA = document.getElementById('telefonWA').value;
+  saveState();
+});
+</script>
+</body>
+</html>
