@@ -168,8 +168,8 @@
       <input type="text" id="responsabilGeneral" placeholder="ex: Ana Popescu">
     </div>
     <div class="field">
-      <label for="telefonWA">Telefon WhatsApp (opțional, cu prefix țară)</label>
-      <input type="text" id="telefonWA" placeholder="ex: 40712345678">
+      <label for="telefonWA">Telefon WhatsApp (opțional)</label>
+      <input type="text" id="telefonWA" placeholder="ex: 0712345678 sau 40712345678">
     </div>
   </div>
 </div>
@@ -599,8 +599,16 @@ function copyOutput(){
   setTimeout(()=>document.getElementById('copyStatus').textContent='', 2000);
 }
 
+function normalizePhone(raw){
+  let digits = raw.trim().replace(/[^0-9]/g,'');
+  if(digits.startsWith('0') && digits.length === 10){
+    digits = '4' + digits; // format local RO (07xxxxxxxx) -> internațional (407xxxxxxxx)
+  }
+  return digits;
+}
+
 function buildWhatsappUrl(){
-  const phoneRaw = document.getElementById('telefonWA').value.trim().replace(/[^0-9]/g,'');
+  const phoneRaw = normalizePhone(document.getElementById('telefonWA').value);
   return phoneRaw ? `https://wa.me/${phoneRaw}` : `https://wa.me/`;
 }
 
