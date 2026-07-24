@@ -627,6 +627,10 @@ function prepWhatsapp(e){
   hint.style.display = 'block';
   hint.innerHTML = '📋 Mesajul a fost <strong>copiat automat</strong> în clipboard (e prea lung ca să încapă pre-completat în link). După ce se deschide conversația, apasă lung în caseta de scris și alege <strong>Lipește</strong>. Dacă nu s-a deschis nimic, dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'">deschide WhatsApp</a>';
 
+  // alert blocant: fără el, redirectarea de mai jos e instantă și nimeni nu apucă
+  // să citească indicația de mai sus înainte să ajungă în WhatsApp
+  alert('Mesajul a fost copiat.\n\nÎn WhatsApp: apasă lung în caseta de scris și alege "Lipește", apoi trimite mesajul.');
+
   // navigare directă (top-level), nu target=_blank: din aplicații adăugate pe ecranul principal
   // (standalone/PWA), iOS eșuează la handoff-ul către app-uri (universal links) prin target=_blank
   window.location.href = url;
