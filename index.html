@@ -204,12 +204,12 @@
       <textarea id="output" readonly placeholder="Apasă „Generează mesajul” după ce ai bifat activitățile pentru punctele 3 și 4."></textarea>
       <div class="copybar">
         <button class="copy" onclick="copyOutput()">Copiază mesajul</button>
-        <a id="waBtn" class="whatsapp" href="#" target="_blank" rel="noopener" onclick="return prepWhatsapp(event)">Trimite pe WhatsApp</a>
+        <a id="waBtn" class="whatsapp" href="#" onclick="return prepWhatsapp(event)">Trimite pe WhatsApp</a>
         <span id="copyStatus" class="fixed-note"></span>
       </div>
       <p id="waHint" class="fixed-note" style="display:none; margin-top:8px;">
-        Dacă nu s-a deschis nimic (browserul a blocat fereastra), dă click direct pe acest link:
-        <a id="waFallbackLink" href="#" target="_blank" rel="noopener">deschide WhatsApp cu mesajul</a>
+        Dacă nu s-a deschis nimic, dă click direct pe acest link:
+        <a id="waFallbackLink" href="#">deschide WhatsApp cu mesajul</a>
       </p>
     </div>
   </div>
@@ -605,21 +605,24 @@ function buildWhatsappUrl(){
 }
 
 function prepWhatsapp(e){
+  if(e) e.preventDefault();
   const out = document.getElementById('output');
   if(!out.value.trim()){ generate(); }
   out.select();
   document.execCommand('copy');
 
   const url = buildWhatsappUrl();
-  const link = document.getElementById('waBtn');
-  link.href = url;
   const fallback = document.getElementById('waFallbackLink');
-  fallback.href = url;
+  if(fallback) fallback.href = url;
 
   const hint = document.getElementById('waHint');
   hint.style.display = 'block';
-  hint.innerHTML = '📋 Mesajul a fost <strong>copiat automat</strong> în clipboard (e prea lung ca să încapă pre-completat în link). După ce se deschide conversația, apasă lung în caseta de scris și alege <strong>Lipește</strong>. Dacă nu s-a deschis nimic, dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'" target="_blank" rel="noopener">deschide WhatsApp</a>';
-  return true;
+  hint.innerHTML = '📋 Mesajul a fost <strong>copiat automat</strong> în clipboard (e prea lung ca să încapă pre-completat în link). După ce se deschide conversația, apasă lung în caseta de scris și alege <strong>Lipește</strong>. Dacă nu s-a deschis nimic, dă click direct pe acest link: <a id="waFallbackLink" href="'+url+'">deschide WhatsApp</a>';
+
+  // navigare directă (top-level), nu target=_blank: din aplicații adăugate pe ecranul principal
+  // (standalone/PWA), iOS eșuează la handoff-ul către app-uri (universal links) prin target=_blank
+  window.location.href = url;
+  return false;
 }
 
 function clearDay(){
