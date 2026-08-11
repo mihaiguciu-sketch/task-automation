@@ -246,6 +246,21 @@
   </div>
 </div>
 
+<div class="card">
+  <h2>💾 Backup</h2>
+  <p class="fixed-note" style="margin-top:0;">
+    Toate datele (istoric activități, puncte custom, puncte fixe editate) sunt salvate doar în acest telefon/browser.
+    Descarcă periodic un backup ca plasă de siguranță — îl poți restaura oricând, pe acest telefon sau pe altul.
+  </p>
+  <div class="copybar">
+    <button class="copy" onclick="downloadBackup()">⬇️ Descarcă backup</button>
+    <label class="copy" style="cursor:pointer;">
+      ⬆️ Restaurează din backup
+      <input type="file" accept="application/json" onchange="restoreBackupFile(this)" style="display:none;">
+    </label>
+  </div>
+</div>
+
 <script>
 const activitati = [
   {id:1, title:"Decaparea esplanadelor – intrare Calea Floreasca",
@@ -381,20 +396,70 @@ const closing = `🔚 Sfârșit de tură – înainte de plecare
 ⚠️ Atenție: Evitați lovirea geamurilor, balustradelor, pereților sau a altor elemente de finisaj cu utilajele. Orice deteriorare produsă din neatenție atrage suportarea costurilor. De asemenea, utilizați utilajele cu grijă pentru a preveni defectarea acestora.
 ⚠️ IMPORTANT: Asigurați-vă că toate operațiunile sunt efectuate corect, complet și la un standard ridicat de calitate, astfel încât fiecare zonă să fie vizibil curată și să poată fi verificată cu ușurință la finalul turei. Insistați asupra detaliilor și nu lăsați în urmă zone parțial curățate, pete vizibile sau depuneri de murdărie. Scopul este ca, la finalul programului, toate spațiile să fie curate, uniforme și pregătite pentru deschiderea centrului comercial.`;
 
-const POINTS_FIXED = [
-  {key:'p1', title:punct1Title, type:'fixed', body:punctFix1},
-  {key:'p2', title:punct2Title, type:'fixed', body:punctFix2},
+const POINTS_META = [
+  {key:'p1', type:'fixed'},
+  {key:'p2', type:'fixed'},
   {key:'p3', title:'Activități suplimentare', type:'checklist', listId:'list3'},
   {key:'p4', title:'Activități suplimentare', type:'checklist', listId:'list4'},
-  {key:'p5', title:punct5Title, type:'fixed', body:punctFix5},
+  {key:'p5', type:'fixed'},
 ];
 
 const HISTORY_KEY = 'tnHistory';
 const STATE_KEY = 'tnState';
 const CUSTOM_POINTS_KEY = 'tnCustomPoints';
+const FIXED_OVERRIDES_KEY = 'tnFixedOverrides';
 
 let customPoints = [];
 let dailyState = null;
+let fixedOverrides = {};
+
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function loadFixedOverrides(){
+  try{ return JSON.parse(localStorage.getItem(FIXED_OVERRIDES_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveFixedOverrides(){ localStorage.setItem(FIXED_OVERRIDES_KEY, JSON.stringify(fixedOverrides)); }
+
+function fixedDefault(key){
+  if(key === 'p1') return {title:punct1Title, body:punctFix1};
+  if(key === 'p2') return {title:punct2Title, body:punctFix2};
+  if(key === 'p5') return {title:punct5Title, body:punctFix5};
+}
+
+// dacă punctul a fost editat manual, textul e liber (nu se mai traduce automat în EN)
+function fixedContent(key){
+  const o = fixedOverrides[key];
+  if(o) return {title:o.title, body:o.body, overridden:true};
+  return {...fixedDefault(key), overridden:false};
+}
+
+function toggleEditFixed(key, forceOpen){
+  const panel = document.getElementById('editPanel_'+key);
+  const shouldOpen = forceOpen !== undefined ? forceOpen : !panel.classList.contains('open');
+  panel.classList.toggle('open', shouldOpen);
+}
+
+function saveFixedEdit(key){
+  const title = document.getElementById('editTitle_'+key).value.trim();
+  const body = document.getElementById('editBody_'+key).value.trim();
+  if(!title || !body){ alert('Completează atât titlul cât și conținutul.'); return; }
+  fixedOverrides[key] = {title, body};
+  saveFixedOverrides();
+  renderAll();
+}
+
+function resetFixedEdit(key){
+  if(!confirm('Revii la textul original (implicit) pentru acest punct?')) return;
+  delete fixedOverrides[key];
+  saveFixedOverrides();
+  renderAll();
+}
 let currentLang = localStorage.getItem('tnLang') || 'ro';
 
 function setLang(lang){
@@ -460,9 +525,15 @@ function loadState(){
 function saveState(){ localStorage.setItem(STATE_KEY, JSON.stringify(dailyState)); }
 
 function getAllPoints(){
-  const pts = POINTS_FIXED.map((p,i)=>({...p, number:i+1, custom:false}));
+  const pts = POINTS_META.map((p,i)=>{
+    if(p.type === 'fixed'){
+      const c = fixedContent(p.key);
+      return {...p, title:c.title, body:c.body, overridden:c.overridden, number:i+1, custom:false};
+    }
+    return {...p, number:i+1, custom:false};
+  });
   customPoints.forEach((cp,i)=>{
-    pts.push({key:'custom_'+cp.id, title:cp.title, type:'custom', body:cp.body, number:POINTS_FIXED.length+i+1, custom:true, customId:cp.id});
+    pts.push({key:'custom_'+cp.id, title:cp.title, type:'custom', body:cp.body, number:POINTS_META.length+i+1, custom:true, customId:cp.id});
   });
   return pts;
 }
@@ -501,6 +572,8 @@ function buildPointCard(cfg){
   card.className = 'card point-card';
 
   const delBtnHtml = cfg.custom ? `<button class="del-point" onclick="deleteCustomPoint(${cfg.customId})">🗑 Șterge punctul</button>` : '';
+  const editBtnHtml = cfg.type === 'fixed' ? `<button class="del-point" onclick="toggleEditFixed('${cfg.key}')">✏️ Editează</button>` : '';
+  const overriddenBadge = cfg.overridden ? ' <span class="badge" style="background:#9a6b00;">editat</span>' : '';
   const respFieldHtml = cfg.type === 'checklist' ? `
       <div class="assign-row">
         <div class="field">
@@ -508,10 +581,27 @@ function buildPointCard(cfg){
           <input type="text" id="resp_${cfg.key}" placeholder="nume angajat" oninput="onRespInput('${cfg.key}')">
         </div>
       </div>` : '';
+  const editPanelHtml = cfg.type === 'fixed' ? `
+    <div class="add-point-panel" id="editPanel_${cfg.key}">
+      <div class="field">
+        <label for="editTitle_${cfg.key}">Titlul punctului</label>
+        <input type="text" id="editTitle_${cfg.key}" value="${escapeHtml(cfg.title)}">
+      </div>
+      <div class="field">
+        <label for="editBody_${cfg.key}">Conținutul punctului</label>
+        <textarea id="editBody_${cfg.key}">${escapeHtml(cfg.body)}</textarea>
+      </div>
+      <div class="add-point-actions">
+        <button class="btn-save" onclick="saveFixedEdit('${cfg.key}')">Salvează</button>
+        <button class="btn-cancel" onclick="toggleEditFixed('${cfg.key}', false)">Anulează</button>
+        ${cfg.overridden ? `<button class="btn-cancel" onclick="resetFixedEdit('${cfg.key}')">↺ Resetează la original</button>` : ''}
+      </div>
+    </div>` : '';
 
   card.innerHTML = `
-    <h2><span class="point-title">${cfg.number}. ${cfg.title}${cfg.type==='checklist' ? ' <span class="badge" id="count_'+cfg.key+'">0</span>' : ''}</span>${delBtnHtml}</h2>
+    <h2><span class="point-title">${cfg.number}. ${cfg.title}${overriddenBadge}${cfg.type==='checklist' ? ' <span class="badge" id="count_'+cfg.key+'">0</span>' : ''}</span>${delBtnHtml}${editBtnHtml}</h2>
     ${cfg.type !== 'checklist' ? `<div class="point-body">${cfg.body}</div>` : `<div id="${cfg.listId}"></div>${respFieldHtml}`}
+    ${editPanelHtml}
     <div class="extra-tasks">
       <div class="extra-tasks-title">Task-uri suplimentare adăugate pentru noaptea asta:</div>
       <div id="extraList_${cfg.key}"></div>
@@ -679,9 +769,13 @@ function pointText(cfg){
     body = selectedText(cfg.listId);
     title = currentLang === 'en' ? FIXED_EN.additionalActivities : 'Activități suplimentare';
   } else if(cfg.type === 'fixed'){
-    const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'] };
-    const [titleVar, bodyVar] = map[cfg.key];
-    if(currentLang === 'en'){
+    // dacă a fost editat manual, textul e liber și rămâne identic în ambele limbi
+    if(cfg.overridden){
+      title = cfg.title;
+      body = cfg.body;
+    } else if(currentLang === 'en'){
+      const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'] };
+      const [titleVar, bodyVar] = map[cfg.key];
       title = FIXED_EN[titleVar];
       body = FIXED_EN[bodyVar];
     } else {
@@ -825,6 +919,51 @@ function copyReport(){
   setTimeout(()=>document.getElementById('reportCopyStatus').textContent='', 2000);
 }
 
+const BACKUP_KEYS = {
+  tnHistory: HISTORY_KEY,
+  tnState: STATE_KEY,
+  tnCustomPoints: CUSTOM_POINTS_KEY,
+  tnFixedOverrides: FIXED_OVERRIDES_KEY,
+  tnLang: 'tnLang',
+};
+
+function downloadBackup(){
+  const backup = { exportedAt: new Date().toISOString(), version: 1 };
+  Object.entries(BACKUP_KEYS).forEach(([field, storageKey])=>{
+    backup[field] = localStorage.getItem(storageKey);
+  });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup-task-automation-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function restoreBackupFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const backup = JSON.parse(e.target.result);
+      if(!confirm('Sigur vrei să restaurezi acest backup? Datele curente din acest telefon vor fi înlocuite.')) return;
+      Object.entries(BACKUP_KEYS).forEach(([field, storageKey])=>{
+        if(backup[field] != null) localStorage.setItem(storageKey, backup[field]);
+      });
+      alert('Backup restaurat cu succes. Pagina se reîncarcă acum.');
+      location.reload();
+    }catch(err){
+      alert('Fișierul de backup nu este valid.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
 function applyStateToDom(){
   document.getElementById('dataTura').value = dailyState.date;
   document.getElementById('responsabilGeneral').value = dailyState.responsabilGeneral || '';
@@ -855,6 +994,7 @@ function renderAll(){
 }
 
 customPoints = loadCustomPoints();
+fixedOverrides = loadFixedOverrides();
 dailyState = loadState();
 renderAll();
 updateLangButtons();
