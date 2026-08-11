@@ -1022,22 +1022,24 @@ function makeZip(files){ // files: [{name, data: Uint8Array}]
   return new Blob([...localParts, ...centralParts, end], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
-function buildSheetXml(headerRow, dataRows){
-  const allRows = [headerRow, ...dataRows];
+function buildSheetXml(allRows, filterStartRow){
+  filterStartRow = filterStartRow || 1;
   let rowsXml = '';
   allRows.forEach((row, rIdx)=>{
     const rowNum = rIdx + 1;
     let cellsXml = '';
     row.forEach((val, cIdx)=>{
+      if(val === '') return; // celulele goale se omit, Excel le tratează implicit ca goale
       cellsXml += `<c r="${colLetter(cIdx)}${rowNum}" t="inlineStr"><is><t>${escapeXml(val)}</t></is></c>`;
     });
     rowsXml += `<row r="${rowNum}">${cellsXml}</row>`;
   });
-  const lastCol = colLetter(headerRow.length - 1);
+  const maxCols = Math.max(...allRows.map(r=>r.length));
+  const lastCol = colLetter(maxCols - 1);
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <sheetData>${rowsXml}</sheetData>
-<autoFilter ref="A1:${lastCol}${allRows.length}"/>
+<autoFilter ref="A${filterStartRow}:${lastCol}${allRows.length}"/>
 </worksheet>`;
 }
 
@@ -1069,7 +1071,7 @@ function daysInMonth(monthValue){ // 'YYYY-MM'
   return new Date(y, m, 0).getDate();
 }
 
-const ZILE_SAPT = ['D','L','Ma','Mi','J','V','S']; // getDay(): 0=Duminică...6=Sâmbătă
+const ZILE_SAPT = ['D','L','M','M','J','V','S']; // getDay(): 0=Duminică...6=Sâmbătă (Marți/Miercuri au aceeași inițială)
 function weekdayAbbrev(y, m, d){
   return ZILE_SAPT[new Date(y, m-1, d).getDay()];
 }
@@ -1082,10 +1084,15 @@ function downloadReportXlsx(){
   const numDays = daysInMonth(monthValue);
   const [repY, repM] = monthValue.split('-').map(Number);
 
-  const header = ['Activitate'];
-  for(let d=1; d<=numDays; d++) header.push(`${d} ${weekdayAbbrev(repY, repM, d)}`);
+  // două rânduri de antet: nr. zilei, apoi inițiala zilei săptămânii dedesubt
+  const dayNumbersRow = [''];
+  const weekdayRow = ['Activitate'];
+  for(let d=1; d<=numDays; d++){
+    dayNumbersRow.push(String(d));
+    weekdayRow.push(weekdayAbbrev(repY, repM, d));
+  }
 
-  const rows = activitati.map(a=>{
+  const dataRows = activitati.map(a=>{
     const doneDays = new Set(
       (history[a.id] || [])
         .filter(d => d.startsWith(monthValue))
@@ -1096,7 +1103,8 @@ function downloadReportXlsx(){
     return row;
   });
 
-  const sheetXml = buildSheetXml(header, rows);
+  const allRows = [dayNumbersRow, weekdayRow, ...dataRows];
+  const sheetXml = buildSheetXml(allRows, 2); // filtrul pornește de la rândul 2 (Activitate + zile săpt.)
   const files = [
     {name:'[Content_Types].xml', data: strToBytes(XLSX_CONTENT_TYPES)},
     {name:'_rels/.rels', data: strToBytes(XLSX_RELS)},
