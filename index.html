@@ -1069,15 +1069,21 @@ function daysInMonth(monthValue){ // 'YYYY-MM'
   return new Date(y, m, 0).getDate();
 }
 
+const ZILE_SAPT = ['D','L','Ma','Mi','J','V','S']; // getDay(): 0=Duminică...6=Sâmbătă
+function weekdayAbbrev(y, m, d){
+  return ZILE_SAPT[new Date(y, m-1, d).getDay()];
+}
+
 function downloadReportXlsx(){
   const monthValue = document.getElementById('reportMonth').value;
   if(!monthValue){ alert('Alege o lună mai întâi.'); return; }
 
   const history = loadHistory();
   const numDays = daysInMonth(monthValue);
+  const [repY, repM] = monthValue.split('-').map(Number);
 
   const header = ['Activitate'];
-  for(let d=1; d<=numDays; d++) header.push(String(d));
+  for(let d=1; d<=numDays; d++) header.push(`${d} ${weekdayAbbrev(repY, repM, d)}`);
 
   const rows = activitati.map(a=>{
     const doneDays = new Set(
