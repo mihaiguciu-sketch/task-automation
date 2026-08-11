@@ -242,6 +242,7 @@
   <textarea id="reportOutput" class="output-box" readonly placeholder="Apasă „Generează raportul” ca să vezi datele fiecărei activități pentru luna selectată."></textarea>
   <div class="copybar">
     <button class="copy" onclick="copyReport()">Copiază raportul</button>
+    <button class="copy" onclick="downloadReportXlsx()">📥 Descarcă XLSX (tip calendar)</button>
     <span id="reportCopyStatus" class="fixed-note"></span>
   </div>
 </div>
@@ -917,6 +918,196 @@ function copyReport(){
   document.execCommand('copy');
   document.getElementById('reportCopyStatus').textContent = 'Copiat!';
   setTimeout(()=>document.getElementById('reportCopyStatus').textContent='', 2000);
+}
+
+// ---- generator .xlsx minimal (zip necomprimat + OOXML), fără librării externe ----
+
+function crc32(bytes){
+  if(!crc32.table){
+    const table = new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c = n;
+      for(let k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c >>> 0;
+    }
+    crc32.table = table;
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++) crc = crc32.table[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function strToBytes(str){ return new TextEncoder().encode(str); }
+
+function escapeXml(str){
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+function colLetter(idx){ // 0-based -> 'A','B',...,'Z','AA','AB'...
+  let n = idx + 1, s = '';
+  while(n > 0){
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+function makeZip(files){ // files: [{name, data: Uint8Array}]
+  const localParts = [], centralParts = [];
+  let offset = 0;
+  const dosTime = 0, dosDate = 0x21; // dată fixă (nu contează pentru citire)
+
+  files.forEach(f=>{
+    const nameBytes = strToBytes(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const size = data.length;
+
+    const local = new Uint8Array(30 + nameBytes.length + size);
+    const dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0, true);
+    dv.setUint16(8, 0, true); // store, fără compresie
+    dv.setUint16(10, dosTime, true);
+    dv.setUint16(12, dosDate, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, size, true);
+    dv.setUint32(22, size, true);
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    local.set(data, 30 + nameBytes.length);
+    localParts.push(local);
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cdv = new DataView(central.buffer);
+    cdv.setUint32(0, 0x02014b50, true);
+    cdv.setUint16(4, 20, true);
+    cdv.setUint16(6, 20, true);
+    cdv.setUint16(8, 0, true);
+    cdv.setUint16(10, 0, true);
+    cdv.setUint16(12, dosTime, true);
+    cdv.setUint16(14, dosDate, true);
+    cdv.setUint32(16, crc, true);
+    cdv.setUint32(20, size, true);
+    cdv.setUint32(24, size, true);
+    cdv.setUint16(28, nameBytes.length, true);
+    cdv.setUint16(30, 0, true);
+    cdv.setUint16(32, 0, true);
+    cdv.setUint16(34, 0, true);
+    cdv.setUint16(36, 0, true);
+    cdv.setUint32(38, 0, true);
+    cdv.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    centralParts.push(central);
+
+    offset += local.length;
+  });
+
+  const centralStart = offset;
+  const centralSize = centralParts.reduce((s,c)=>s+c.length, 0);
+
+  const end = new Uint8Array(22);
+  const edv = new DataView(end.buffer);
+  edv.setUint32(0, 0x06054b50, true);
+  edv.setUint16(8, files.length, true);
+  edv.setUint16(10, files.length, true);
+  edv.setUint32(12, centralSize, true);
+  edv.setUint32(16, centralStart, true);
+
+  return new Blob([...localParts, ...centralParts, end], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function buildSheetXml(headerRow, dataRows){
+  const allRows = [headerRow, ...dataRows];
+  let rowsXml = '';
+  allRows.forEach((row, rIdx)=>{
+    const rowNum = rIdx + 1;
+    let cellsXml = '';
+    row.forEach((val, cIdx)=>{
+      cellsXml += `<c r="${colLetter(cIdx)}${rowNum}" t="inlineStr"><is><t>${escapeXml(val)}</t></is></c>`;
+    });
+    rowsXml += `<row r="${rowNum}">${cellsXml}</row>`;
+  });
+  const lastCol = colLetter(headerRow.length - 1);
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>${rowsXml}</sheetData>
+<autoFilter ref="A1:${lastCol}${allRows.length}"/>
+</worksheet>`;
+}
+
+const XLSX_CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`;
+
+const XLSX_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+const XLSX_WORKBOOK = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Raport" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+const XLSX_WORKBOOK_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`;
+
+function daysInMonth(monthValue){ // 'YYYY-MM'
+  const [y,m] = monthValue.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+function downloadReportXlsx(){
+  const monthValue = document.getElementById('reportMonth').value;
+  if(!monthValue){ alert('Alege o lună mai întâi.'); return; }
+
+  const history = loadHistory();
+  const numDays = daysInMonth(monthValue);
+
+  const header = ['Activitate'];
+  for(let d=1; d<=numDays; d++) header.push(String(d));
+
+  const rows = activitati.map(a=>{
+    const doneDays = new Set(
+      (history[a.id] || [])
+        .filter(d => d.startsWith(monthValue))
+        .map(d => parseInt(d.slice(8,10), 10))
+    );
+    const row = [`${a.id}. ${a.title}`];
+    for(let d=1; d<=numDays; d++) row.push(doneDays.has(d) ? 'X' : '');
+    return row;
+  });
+
+  const sheetXml = buildSheetXml(header, rows);
+  const files = [
+    {name:'[Content_Types].xml', data: strToBytes(XLSX_CONTENT_TYPES)},
+    {name:'_rels/.rels', data: strToBytes(XLSX_RELS)},
+    {name:'xl/workbook.xml', data: strToBytes(XLSX_WORKBOOK)},
+    {name:'xl/_rels/workbook.xml.rels', data: strToBytes(XLSX_WORKBOOK_RELS)},
+    {name:'xl/worksheets/sheet1.xml', data: strToBytes(sheetXml)},
+  ];
+
+  const blob = makeZip(files);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `raport-activitati-${monthValue}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const BACKUP_KEYS = {
