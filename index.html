@@ -359,6 +359,12 @@ SCRUB AND WASH EVERY SINGLE TILE! (T7 machine – detergent: 1 L / tank)`,
 🔹 Remove dirt buildup from the slat mats.
 🔹 Revolving doors are washed with water and a brush.
 🔹 Ribbed doormats must be thoroughly scrubbed, rinsed with a mop using clean water, and finally wipe the rubber strip at the base of each revolving door panel.`,
+  punct6Title: "WASHING THE PLAZAS WITH THE T7 MACHINE",
+  punctFix6: `🔹 Time slot: 05:30 – 07:00
+🔹 Using the T7 machine, wash the plaza flooring, in this mandatory order:
+   1. Floreasca Plaza
+   2. Barbu Văcărescu Plaza
+⚠️ Follow the order above — do not start Barbu Văcărescu before finishing Floreasca.`,
   closing: `🔚 End of shift – before leaving
 🔹 Check that all machines and tools used have been thoroughly cleaned.
 🔹 Make sure they are not damaged and are stored in the designated places.
@@ -391,6 +397,13 @@ const punctFix5 = `🔹 Aspirați toate covoarele textile de la intrări.
 🔹 Ușile rotative se spală cu apă și perie.
 🔹 Preșurile striate se freacă temeinic, se clătesc cu mopul folosind apă curată, iar la final se șterge banda de cauciuc de la baza fiecărui panou al ușilor rotative.`;
 
+const punct6Title = "SPĂLARE ESPLANADE CU MAȘINA T7";
+const punctFix6 = `🔹 Interval orar: 05:30 – 07:00
+🔹 Cu mașina T7, spălați pardoseala pe esplanade, în această ordine obligatorie:
+   1. Esplanada Floreasca
+   2. Esplanada Barbu Văcărescu
+⚠️ Respectați ordinea de mai sus — nu începeți Barbu Văcărescu înainte de a termina Floreasca.`;
+
 const closing = `🔚 Sfârșit de tură – înainte de plecare
 🔹 Verificați ca toate utilajele și uneltele folosite să fie curățate temeinic.
 🔹 Asigurați-vă că nu sunt deteriorate și că sunt depozitate în locurile desemnate.
@@ -403,6 +416,7 @@ const POINTS_META = [
   {key:'p3', title:'Activități suplimentare', type:'checklist', listId:'list3'},
   {key:'p4', title:'Activități suplimentare', type:'checklist', listId:'list4'},
   {key:'p5', type:'fixed'},
+  {key:'p6', type:'fixed'},
 ];
 
 const HISTORY_KEY = 'tnHistory';
@@ -431,6 +445,7 @@ function fixedDefault(key){
   if(key === 'p1') return {title:punct1Title, body:punctFix1};
   if(key === 'p2') return {title:punct2Title, body:punctFix2};
   if(key === 'p5') return {title:punct5Title, body:punctFix5};
+  if(key === 'p6') return {title:punct6Title, body:punctFix6};
 }
 
 // dacă punctul a fost editat manual, textul e liber (nu se mai traduce automat în EN)
@@ -775,7 +790,7 @@ function pointText(cfg){
       title = cfg.title;
       body = cfg.body;
     } else if(currentLang === 'en'){
-      const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'] };
+      const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'], p6: ['punct6Title','punctFix6'] };
       const [titleVar, bodyVar] = map[cfg.key];
       title = FIXED_EN[titleVar];
       body = FIXED_EN[bodyVar];
