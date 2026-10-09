@@ -307,8 +307,8 @@ const activitati = [
    desc:"🔹 Curățenie generală completă: pardoseli, obiecte sanitare, oglinzi, uși, pereți despărțitori și toate suprafețele verticale.\n🔹 Curățați și dezinfectați vasele WC, pisoarele și chiuvetele cu GEL DEZINFECTANT.\n🔹 Bateriile, dispenserele, uscătoarele și toate suprafețele de contact se curăță cu lavetă umedă, apoi se șterg cu lavetă uscată.\n🔹 Curățați complet semnalistica grupurilor sanitare, inclusiv panourile, indicatoarele și ramele decorative.\n🔹 Decaparea pardoselii cu detergent {{DETERGENT}}, insistând pe colțuri, margini și zonele greu accesibile.\n⚠️ La final, întregul grup sanitar trebuie să fie complet curat și uscat, fără pete."},
   {id:13, title:"CURĂȚENIE GENERALĂ – GRUPURI SANITARE NIVEL 2", fields:[{key:'detergent', label:'Detergent', placeholder:'ex: nume detergent'}],
    desc:"🔹 Curățenie generală completă: pardoseli, obiecte sanitare, oglinzi, uși, pereți despărțitori și toate suprafețele verticale.\n🔹 Curățați și dezinfectați vasele WC, pisoarele și chiuvetele cu GEL DEZINFECTANT.\n🔹 Bateriile, dispenserele, uscătoarele și toate suprafețele de contact se curăță cu lavetă umedă, apoi se șterg cu lavetă uscată.\n🔹 Curățați complet semnalistica grupurilor sanitare, inclusiv panourile, indicatoarele și ramele decorative.\n🔹 Decaparea pardoselii cu detergent {{DETERGENT}}, insistând pe colțuri, margini și zonele greu accesibile.\n⚠️ La final, întregul grup sanitar trebuie să fie complet curat și uscat, fără pete."},
-  {id:14, title:"Curățare covoare lamelare exterior – intrările Floreasca și Barbu Văcărescu",
-   desc:"Ridicați toate covoarele lamelare de la ambele intrări. Aspirați foarte bine covoarele și întreaga suprafață de sub ele, inclusiv marginile și colțurile. Spălați temeinic pardoseala de sub covoare și îndepărtați toate urmele de noroi, nisip și murdărie. Spălați covoarele lamelare și curățați ramele și benzile de cauciuc."},
+  {id:14, title:"Spălare covoare lamelare – EXTERIOR – intrare {{INTRARE}}", reportTitle:"Spălare covoare lamelare – EXTERIOR", fields:[{key:'intrare', label:'Intrare', placeholder:'ex: Floreasca'}],
+   desc:"🔹 Ridicați toate covoarele lamelare și scoateți-le pe esplanadă.\n🔹 Aspirați foarte bine întreaga suprafață de sub covoare, inclusiv marginile și colțurile, îndepărtând complet noroiul, nisipul și murdăria acumulată.\n🔹 Spălați covoarele lamelare cu furtunul cu apă și, în același timp, frecați foarte bine întreaga suprafață cu peria.\n🔹 Clătiți bine până când apa rămâne curată și nu mai există urme de murdărie."},
 ];
 
 // traduceri EN pentru mesajul generat (interfața rămâne în română) — indexate după id
@@ -339,8 +339,8 @@ const activitatiEN = {
        desc:"🔹 Complete general cleaning: floors, sanitary fixtures, mirrors, doors, partition walls and all vertical surfaces.\n🔹 Clean and disinfect the toilet bowls, urinals and sinks with DISINFECTANT GEL.\n🔹 Taps, dispensers, hand dryers and all contact surfaces are cleaned with a damp cloth, then wiped with a dry cloth.\n🔹 Thoroughly clean the restroom signage, including panels, signs and decorative frames.\n🔹 Strip the floor with {{DETERGENT}} detergent, focusing on corners, edges and hard-to-reach areas.\n⚠️ At the end, the entire restroom must be completely clean and dry, stain-free."},
   13: {title:"GENERAL CLEANING – RESTROOMS LEVEL 2",
        desc:"🔹 Complete general cleaning: floors, sanitary fixtures, mirrors, doors, partition walls and all vertical surfaces.\n🔹 Clean and disinfect the toilet bowls, urinals and sinks with DISINFECTANT GEL.\n🔹 Taps, dispensers, hand dryers and all contact surfaces are cleaned with a damp cloth, then wiped with a dry cloth.\n🔹 Thoroughly clean the restroom signage, including panels, signs and decorative frames.\n🔹 Strip the floor with {{DETERGENT}} detergent, focusing on corners, edges and hard-to-reach areas.\n⚠️ At the end, the entire restroom must be completely clean and dry, stain-free."},
-  14: {title:"Cleaning exterior slat mats – Floreasca and Barbu Văcărescu entrances",
-       desc:"Lift all slat mats at both entrances. Thoroughly vacuum the mats and the entire surface underneath them, including edges and corners. Thoroughly wash the flooring under the mats and remove all traces of mud, sand and dirt. Wash the slat mats and clean the frames and rubber strips."},
+  14: {title:"Washing slat mats – EXTERIOR – entrance {{INTRARE}}",
+       desc:"🔹 Lift all slat mats and take them out onto the plaza.\n🔹 Thoroughly vacuum the entire surface under the mats, including edges and corners, completely removing the mud, sand and accumulated dirt.\n🔹 Wash the slat mats with the water hose and, at the same time, scrub the entire surface thoroughly with the brush.\n🔹 Rinse well until the water stays clean and no traces of dirt remain."},
 };
 
 const FIXED_EN = {
@@ -648,14 +648,16 @@ function renderPoints(){
   });
 }
 
-function descPreview(a){
-  if(!a.fields || !a.fields.length) return a.desc;
-  let out = a.desc;
+function blankFields(a, text){
+  if(!a.fields || !a.fields.length) return text;
+  let out = text;
   a.fields.forEach(f=>{
     out = out.replaceAll(`{{${f.key.toUpperCase()}}}`, '____');
   });
   return out;
 }
+function descPreview(a){ return blankFields(a, a.desc); }
+function titlePreview(a){ return blankFields(a, a.title); }
 
 function buildChecklist(containerId, groupName){
   const el = document.getElementById(containerId);
@@ -685,7 +687,7 @@ function buildChecklist(containerId, groupName){
       <label>
         <input type="checkbox" data-group="${groupName}" data-id="${a.id}" onchange="onToggle(this)">
         <div style="width:100%">
-          <div class="title">${a.id}. ${a.title} ${lastUsedHtml}</div>
+          <div class="title">${a.id}. ${titlePreview(a)} ${lastUsedHtml}</div>
           <div class="desc">${descPreview(a)}</div>
           ${extraFieldsHtml}
         </div>
@@ -771,12 +773,13 @@ function selectedText(groupId){
     const a = activitati.find(x=>x.id == id);
     if(!a) return '';
     const en = currentLang === 'en' ? activitatiEN[a.id] : null;
-    const title = en ? en.title : a.title;
+    let title = en ? en.title : a.title;
     let desc = en ? en.desc : a.desc;
     if(a.fields && a.fields.length){
       a.fields.forEach(f=>{
         const val = (dailyState.fieldValues[groupId+'_'+f.key+'_'+a.id] || '').trim() || '____';
         desc = desc.replaceAll(`{{${f.key.toUpperCase()}}}`, val);
+        title = title.replaceAll(`{{${f.key.toUpperCase()}}}`, val);
       });
     }
     return `*${title}*\n${desc}`;
@@ -925,7 +928,7 @@ function generateMonthlyReport(){
   const lines = activitati.map(a=>{
     const dates = (history[a.id] || []).filter(d => d.startsWith(monthValue)).sort();
     const datesText = dates.length ? dates.map(fmtDate).join(', ') : '— nicio dată';
-    return `${a.id}. ${a.title}: ${datesText}`;
+    return `${a.id}. ${a.reportTitle || a.title}: ${datesText}`;
   });
 
   out.value = `📊 Raport activități – ${m}/${y}\n\n${lines.join('\n')}`;
@@ -1119,7 +1122,7 @@ function downloadReportXlsx(){
         .filter(d => d.startsWith(monthValue))
         .map(d => parseInt(d.slice(8,10), 10))
     );
-    const row = [`${a.id}. ${a.title}`];
+    const row = [`${a.id}. ${a.reportTitle || a.title}`];
     for(let d=1; d<=numDays; d++) row.push(doneDays.has(d) ? 'X' : '');
     return row;
   });
