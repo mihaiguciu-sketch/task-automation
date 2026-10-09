@@ -162,7 +162,7 @@
 <body>
 
 <h1>Task Automation – Generator Mesaj Sarcini Tură Noapte</h1>
-<p class="sub">Bifează activitățile din Anexă pentru Punctul 3 și Punctul 4. Punctele 1, 2 și 5 sunt fixe. Poți adăuga puncte noi sau task-uri suplimentare la orice punct cu butoanele de mai jos.</p>
+<p class="sub">Bifează activitățile din Anexă pentru Punctul 3 și Punctul 4. Punctele 1, 2 și 5 sunt fixe. Poți adăuga puncte noi sau task-uri suplimentare (la finalul listei) cu butoanele de mai jos.</p>
 
 <div class="card">
   <div class="header-fields">
@@ -542,7 +542,13 @@ function defaultState(){
 function loadState(){
   try{
     const s = JSON.parse(localStorage.getItem(STATE_KEY));
-    if(s && s.date === todayStr()) return s;
+    if(s && s.date === todayStr()){
+      // migrare: task-urile suplimentare vechi, pe puncte, se unesc în blocul unic
+      const merged = [];
+      Object.values(s.extraTasks || {}).forEach(arr => { if(Array.isArray(arr)) merged.push(...arr); });
+      s.extraTasks = merged.length ? {extra: merged} : {};
+      return s;
+    }
   }catch(e){}
   return defaultState();
 }
@@ -626,15 +632,24 @@ function buildPointCard(cfg){
     <h2><span class="point-title">${cfg.number}. ${cfg.title}${overriddenBadge}${cfg.type==='checklist' ? ' <span class="badge" id="count_'+cfg.key+'">0</span>' : ''}</span>${delBtnHtml}${editBtnHtml}</h2>
     ${cfg.type !== 'checklist' ? `<div class="point-body">${cfg.body}</div>` : `<div id="${cfg.listId}"></div>${respFieldHtml}`}
     ${editPanelHtml}
-    <div class="extra-tasks">
-      <div class="extra-tasks-title">Task-uri suplimentare adăugate pentru noaptea asta:</div>
-      <div id="extraList_${cfg.key}"></div>
-      <div class="add-task-row">
-        <input type="text" id="newTaskInput_${cfg.key}" placeholder="scrie un task nou și apasă Adaugă">
-        <button onclick="addExtraTask('${cfg.key}')">+ Adaugă task</button>
-      </div>
-    </div>
   `;
+  return card;
+}
+
+// un singur bloc de task-uri suplimentare, la finalul tuturor punctelor
+const EXTRA_KEY = 'extra';
+function buildExtraTasksCard(){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="extra-tasks" style="margin-top:0; border-top:none; padding-top:0;">
+      <div class="extra-tasks-title">Task-uri suplimentare adăugate pentru noaptea asta:</div>
+      <div id="extraList_${EXTRA_KEY}"></div>
+      <div class="add-task-row">
+        <input type="text" id="newTaskInput_${EXTRA_KEY}" placeholder="scrie un task nou și apasă Adaugă">
+        <button onclick="addExtraTask('${EXTRA_KEY}')">+ Adaugă task</button>
+      </div>
+    </div>`;
   return card;
 }
 
@@ -646,8 +661,9 @@ function renderPoints(){
     if(cfg.type === 'checklist'){
       buildChecklist(cfg.listId, cfg.listId);
     }
-    renderExtraTasksList(cfg.key);
   });
+  container.appendChild(buildExtraTasksCard());
+  renderExtraTasksList(EXTRA_KEY);
 }
 
 function blankFields(a, text){
@@ -790,7 +806,7 @@ function selectedText(groupId){
 
 // pentru punctele fixe (1,2,5), mesajul folosește textul EN dacă e selectat;
 // punctele custom (adăugate de utilizator) rămân mereu în română, ca text liber
-function pointText(cfg){
+function pointText(cfg, isLast){
   let body, title = cfg.title;
   if(cfg.type === 'checklist'){
     body = selectedText(cfg.listId);
@@ -812,7 +828,8 @@ function pointText(cfg){
   } else {
     body = cfg.body;
   }
-  const extras = dailyState.extraTasks[cfg.key] || [];
+  // task-urile suplimentare (bloc unic) se atașează ultimului punct
+  const extras = isLast ? (dailyState.extraTasks[EXTRA_KEY] || []) : [];
   const extraBlock = extras.length ? '\n' + extras.map(t=>'➕ '+t).join('\n') : '';
   const resp = cfg.type === 'checklist' ? (dailyState.respByKey[cfg.key] || '') : '';
   const respLabel = currentLang === 'en' ? FIXED_EN.personInCharge : 'Responsabil';
@@ -829,7 +846,7 @@ function generate(){
     : `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
   if(responsabilGeneral) headerLine += currentLang === 'en' ? ` (Shift manager: ${responsabilGeneral})` : ` (Responsabil tură: ${responsabilGeneral})`;
 
-  const pointsText = getAllPoints().map(pointText).join('\n\n');
+  const pointsText = getAllPoints().map((p, i, arr) => pointText(p, i === arr.length - 1)).join('\n\n');
   const closingText = currentLang === 'en' ? FIXED_EN.closing : closing;
 
   const msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
