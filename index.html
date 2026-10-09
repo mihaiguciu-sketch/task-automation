@@ -86,6 +86,8 @@
   }
   .add-task-row button:hover{background:#eef8f2;}
 
+  .link-opt{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--muted); margin-bottom:10px; cursor:pointer;}
+  .link-opt input{margin-top:2px; flex-shrink:0;}
   .lang-toggle{display:flex; gap:8px; margin-bottom:10px;}
   .lang-btn{
     flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
@@ -201,6 +203,10 @@
       </div>
     </div>
 
+    <label class="link-opt">
+      <input type="checkbox" id="includeLink" onchange="setIncludeLink(this.checked)">
+      Adaugă în mesaj link pentru confirmarea taskurilor (operatorii apasă „Finalizat")
+    </label>
     <div class="lang-toggle">
       <button type="button" id="langRoBtn" class="lang-btn" onclick="setLang('ro')">🇷🇴 Română</button>
       <button type="button" id="langEnBtn" class="lang-btn" onclick="setLang('en')">🇬🇧 English</button>
@@ -498,7 +504,23 @@ function setLang(lang){
   updateLangButtons();
 }
 
+// link către pagina operatorului (operator.html) cu lista taskurilor codată în #hash
+let includeLink = localStorage.getItem('tnIncludeLink') !== '0';
+function setIncludeLink(v){
+  includeLink = v;
+  localStorage.setItem('tnIncludeLink', v ? '1' : '0');
+}
+
+function buildOperatorLink(blocks, dataTura){
+  const items = blocks.map((b, i) => `${i+1}. ${b.title}`);
+  (dailyState.extraTasks[EXTRA_KEY] || []).forEach(t => items.push('➕ ' + t));
+  const json = JSON.stringify({v:1, d:dataTura, l:currentLang, t:items});
+  const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return new URL('operator.html', location.href).href.split('#')[0] + '#' + b64;
+}
+
 function updateLangButtons(){
+  document.getElementById('includeLink').checked = includeLink;
   document.getElementById('langRoBtn').classList.toggle('active', currentLang === 'ro');
   document.getElementById('langEnBtn').classList.toggle('active', currentLang === 'en');
 }
@@ -863,10 +885,17 @@ function generate(){
     : `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
   if(responsabilGeneral) headerLine += currentLang === 'en' ? ` (Shift manager: ${responsabilGeneral})` : ` (Responsabil tură: ${responsabilGeneral})`;
 
-  const pointsText = blocksToText(messageBlocks());
+  const blocks = messageBlocks();
+  const pointsText = blocksToText(blocks);
   const closingText = currentLang === 'en' ? FIXED_EN.closing : closing;
 
-  const msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
+  let msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
+  if(includeLink){
+    const linkLabel = currentLang === 'en'
+      ? '📲 Mark each task as completed here:'
+      : '📲 Marchează aici fiecare task finalizat:';
+    msg += `\n\n${linkLabel}\n${buildOperatorLink(blocks, dataTura)}`;
+  }
   document.getElementById('output').value = msg;
   document.getElementById('copyStatus').textContent = '';
 
