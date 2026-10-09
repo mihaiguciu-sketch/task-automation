@@ -838,19 +838,14 @@ function messageBlocks(){
 
 function blocksToText(blocks){
   return blocks.map((b, i)=>{
-    let text = `*${i+1}. ${b.title}*
-${b.body}`;
+    let text = `*${i+1}. ${b.title}*\n${b.body}`;
     // task-urile suplimentare (bloc unic) se atașează ultimului punct
     if(i === blocks.length - 1){
       const extras = dailyState.extraTasks[EXTRA_KEY] || [];
-      if(extras.length) text += '
-' + extras.map(t=>'➕ '+t).join('
-');
+      if(extras.length) text += '\n' + extras.map(t=>'➕ '+t).join('\n');
     }
     return text;
-  }).join('
-
-');
+  }).join('\n\n');
 }
 
 function generate(){
