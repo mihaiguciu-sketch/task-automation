@@ -784,12 +784,14 @@ function renderExtraTasksList(key){
   });
 }
 
-function selectedText(groupId){
+// activitățile bifate la punctele 3 și 4: fiecare își are propriul titlu (fără antet generic)
+function selectedActivityBlocks(groupId, resp){
   const ids = dailyState[groupId] || [];
-  if(ids.length === 0) return currentLang === 'en' ? FIXED_EN.noActivitySelected : "(nicio activitate selectată)";
-  return ids.map(id=>{
+  const respLabel = currentLang === 'en' ? FIXED_EN.personInCharge : 'Responsabil';
+  const blocks = [];
+  ids.forEach(id=>{
     const a = activitati.find(x=>x.id == id);
-    if(!a) return '';
+    if(!a) return;
     const en = currentLang === 'en' ? activitatiEN[a.id] : null;
     let title = en ? en.title : a.title;
     let desc = en ? en.desc : a.desc;
@@ -800,41 +802,55 @@ function selectedText(groupId){
         title = title.replaceAll(`{{${f.key.toUpperCase()}}}`, val);
       });
     }
-    return `*${title}*\n${desc}`;
-  }).join('\n\n');
+    if(resp) title += ` (${respLabel}: ${resp})`;
+    blocks.push({title, body: desc});
+  });
+  return blocks;
 }
 
-// pentru punctele fixe (1,2,5), mesajul folosește textul EN dacă e selectat;
+// pentru punctele fixe (1,2,5,6), mesajul folosește textul EN dacă e selectat;
 // punctele custom (adăugate de utilizator) rămân mereu în română, ca text liber
-function pointText(cfg, isLast){
-  let body, title = cfg.title;
-  if(cfg.type === 'checklist'){
-    body = selectedText(cfg.listId);
-    title = currentLang === 'en' ? FIXED_EN.additionalActivities : 'Activități suplimentare';
-  } else if(cfg.type === 'fixed'){
+function fixedPointBlock(cfg){
+  if(cfg.type === 'fixed'){
     // dacă a fost editat manual, textul e liber și rămâne identic în ambele limbi
-    if(cfg.overridden){
-      title = cfg.title;
-      body = cfg.body;
-    } else if(currentLang === 'en'){
+    if(!cfg.overridden && currentLang === 'en'){
       const map = { p1: ['punct1Title','punctFix1'], p2: ['punct2Title','punctFix2'], p5: ['punct5Title','punctFix5'], p6: ['punct6Title','punctFix6'] };
       const [titleVar, bodyVar] = map[cfg.key];
-      title = FIXED_EN[titleVar];
-      body = FIXED_EN[bodyVar];
-    } else {
-      title = cfg.title;
-      body = cfg.body;
+      return {title: FIXED_EN[titleVar], body: FIXED_EN[bodyVar]};
     }
-  } else {
-    body = cfg.body;
   }
-  // task-urile suplimentare (bloc unic) se atașează ultimului punct
-  const extras = isLast ? (dailyState.extraTasks[EXTRA_KEY] || []) : [];
-  const extraBlock = extras.length ? '\n' + extras.map(t=>'➕ '+t).join('\n') : '';
-  const resp = cfg.type === 'checklist' ? (dailyState.respByKey[cfg.key] || '') : '';
-  const respLabel = currentLang === 'en' ? FIXED_EN.personInCharge : 'Responsabil';
-  const header = resp ? `*${cfg.number}. ${title} (${respLabel}: ${resp})*` : `*${cfg.number}. ${title}*`;
-  return `${header}\n${body}${extraBlock}`;
+  return {title: cfg.title, body: cfg.body};
+}
+
+// lista finală de blocuri numerotate secvențial: puncte fixe + fiecare activitate bifată cu titlul ei
+function messageBlocks(){
+  const blocks = [];
+  getAllPoints().forEach(cfg=>{
+    if(cfg.type === 'checklist'){
+      const resp = dailyState.respByKey[cfg.key] || '';
+      blocks.push(...selectedActivityBlocks(cfg.listId, resp));
+    } else {
+      blocks.push(fixedPointBlock(cfg));
+    }
+  });
+  return blocks;
+}
+
+function blocksToText(blocks){
+  return blocks.map((b, i)=>{
+    let text = `*${i+1}. ${b.title}*
+${b.body}`;
+    // task-urile suplimentare (bloc unic) se atașează ultimului punct
+    if(i === blocks.length - 1){
+      const extras = dailyState.extraTasks[EXTRA_KEY] || [];
+      if(extras.length) text += '
+' + extras.map(t=>'➕ '+t).join('
+');
+    }
+    return text;
+  }).join('
+
+');
 }
 
 function generate(){
@@ -846,7 +862,7 @@ function generate(){
     : `✅ Sarcini – ${fmtDate(dataTura)} – Interval orar: 22:00–07:00`;
   if(responsabilGeneral) headerLine += currentLang === 'en' ? ` (Shift manager: ${responsabilGeneral})` : ` (Responsabil tură: ${responsabilGeneral})`;
 
-  const pointsText = getAllPoints().map((p, i, arr) => pointText(p, i === arr.length - 1)).join('\n\n');
+  const pointsText = blocksToText(messageBlocks());
   const closingText = currentLang === 'en' ? FIXED_EN.closing : closing;
 
   const msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
