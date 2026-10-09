@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Taskuri tură</title>
+<title>Raport final tură</title>
 <style>
   :root{
     --bg:#f4f6f8; --card:#fff; --accent:#0f7a4c; --accent-dark:#0b5c39; --text:#1f2933;
-    --muted:#6b7280; --border:#e2e5e9; --done-bg:#eef8f2; --danger:#c0392b;
+    --muted:#6b7280; --border:#e2e5e9; --danger:#c0392b; --warn:#b9770e;
   }
   *{box-sizing:border-box;}
-  body{font-family:"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:16px; line-height:1.4;}
+  body{font-family:"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:16px 16px 110px; line-height:1.4;}
   .wrap{max-width:640px; margin:0 auto;}
   h1{font-size:19px; margin:0 0 2px;}
   .sub{color:var(--muted); font-size:13px; margin:0 0 14px;}
@@ -22,22 +22,19 @@
   .progress{font-size:13px; font-weight:600; color:var(--accent-dark); margin:12px 2px 8px;}
   .bar{height:8px; background:#e3e7ea; border-radius:6px; overflow:hidden; margin-bottom:12px;}
   .bar > div{height:100%; background:var(--accent); width:0; transition:width .2s;}
-  .task{display:flex; flex-direction:column; gap:8px;}
-  .task.done{background:var(--done-bg); border-color:var(--accent);}
-  .task .t{font-size:14.5px; font-weight:600; word-break:break-word;}
-  .task .meta{font-size:12px; color:var(--accent-dark);}
-  .row{display:flex; gap:8px; flex-wrap:wrap;}
-  button{font-family:inherit; cursor:pointer; border-radius:8px; font-size:14px;}
-  button.ok{flex:1; background:var(--accent); color:#fff; border:none; padding:12px 14px; font-weight:600;}
-  button.ok:active{background:var(--accent-dark);}
-  button.sec{background:#fff; border:1px solid var(--border); color:var(--muted); padding:9px 12px; font-size:13px;}
+  .q{font-size:14.5px; font-weight:600; word-break:break-word; margin-bottom:8px;}
+  .sect{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin:16px 2px 8px;}
+  .opts{display:flex; gap:6px;}
+  .opts button{flex:1; padding:11px 4px; border:1px solid var(--border); background:#fff; color:var(--text); border-radius:8px; font-family:inherit; font-size:13.5px; cursor:pointer; line-height:1.2;}
+  .opts button.sel-y{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;}
+  .opts button.sel-n{background:var(--danger); border-color:var(--danger); color:#fff; font-weight:700;}
+  .opts button.sel-p{background:var(--warn); border-color:var(--warn); color:#fff; font-weight:700;}
   .hint{font-size:12.5px; color:var(--muted); margin:14px 2px;}
-  .imm{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--muted); margin:6px 2px 90px; cursor:pointer;}
-  .imm input{margin-top:2px;}
-  .sendbar{position:fixed; left:0; right:0; bottom:0; background:rgba(244,246,248,.96); border-top:1px solid var(--border); padding:10px 16px calc(10px + env(safe-area-inset-bottom));}
-  .sendbar button.send{display:block; width:100%; max-width:640px; margin:0 auto; background:#25D366; color:#fff; border:none; padding:14px; font-size:15px; font-weight:700; border-radius:10px;}
-  .sendbar button.send.off{background:#cfd6dc; color:#5b6670; font-weight:600;}
   .err-box{background:#fceceb; border:1px solid var(--danger); color:var(--danger); padding:14px; border-radius:10px;}
+  .sendbar{position:fixed; left:0; right:0; bottom:0; background:rgba(244,246,248,.96); border-top:1px solid var(--border); padding:10px 16px calc(10px + env(safe-area-inset-bottom));}
+  .sendbar button{display:block; width:100%; max-width:640px; margin:0 auto; background:#25D366; color:#fff; border:none; padding:14px; font-size:15px; font-weight:700; border-radius:10px; font-family:inherit; cursor:pointer;}
+  .sendbar button:disabled{background:#cfd6dc; color:#5b6670; font-weight:600; cursor:default;}
+  .sendbar .sentnote{max-width:640px; margin:0 auto 6px; font-size:12px; color:var(--accent-dark); text-align:center;}
 </style>
 </head>
 <body>
@@ -47,20 +44,26 @@
 <script>
 const I18N = {
   ro: {
-    title:'Taskuri tură', name:'Numele tău', namePh:'ex: Ion Marin', nameNeed:'Scrie mai întâi numele tău.',
-    done:'✔ Finalizat', doneBy:'Finalizat', undo:'↩ Anulează', resend:'📤 Retrimite pe WhatsApp',
-    progress:'finalizate', hint:'Bifează taskurile pe rând, pe măsură ce le termini. Când vrei să anunți grupul, apasă „Trimite pe WhatsApp” din josul paginii: alege grupul de lucru și apasă Trimite. Poți lăsa pagina deschisă sau o poți redeschide oricând din același link, bifele rămân salvate.',
-    send:'📤 Trimite pe WhatsApp', sendNew:'noi', allSent:'✔ Toate trimise în grup', nothingYet:'Bifează un task ca să poți trimite',
-    immediate:'Trimite pe WhatsApp imediat după fiecare task', sentMark:'trimis',
-    msg:'✅ Finalizat', invalid:'Link invalid sau incomplet. Cere din nou linkul din grupul de lucru.', shift:'Tura din'
+    title:'Raport final tură', name:'Numele tău', namePh:'ex: Ion Marin', nameNeed:'Scrie mai întâi numele tău.',
+    yes:'Da', no:'Nu', part:'Parțial',
+    tasks:'Taskuri', gear:'Utilaje și ustensile',
+    qMach:'🔧 Utilajele au fost curățate, verificate și depozitate în locurile stabilite?',
+    qTools:'🧹 Ustensilele au fost curățate și depozitate în locurile stabilite?',
+    answered:'răspunsuri date', hint:'Răspunde la fiecare întrebare la finalul turei: Da (făcut complet), Nu (nefăcut) sau Parțial (are nevoie de mai mult timp). Apoi apasă butonul verde: se deschide WhatsApp, alegi grupul de lucru și apeși Trimite. Răspunsurile rămân salvate dacă închizi pagina.',
+    send:'📤 Trimite raportul pe WhatsApp', resend:'📤 Retrimite raportul pe WhatsApp', missing:'Mai ai de răspuns la', missingEnd:'întrebări',
+    sentNote:'✔ Raport trimis. Dacă schimbi un răspuns, poți retrimite.',
+    report:'📋 Raport final tură', invalid:'Link invalid sau incomplet. Cere din nou linkul din grupul de lucru.', shift:'Tura din'
   },
   en: {
-    title:'Shift tasks', name:'Your name', namePh:'e.g. John Smith', nameNeed:'Please enter your name first.',
-    done:'✔ Completed', doneBy:'Completed', undo:'↩ Undo', resend:'📤 Resend on WhatsApp',
-    progress:'completed', hint:'Tick tasks one by one as you finish them. When you want to notify the group, press “Send on WhatsApp” at the bottom: choose the work group and press Send. You can keep this page open or reopen it anytime from the same link; your ticks stay saved.',
-    send:'📤 Send on WhatsApp', sendNew:'new', allSent:'✔ All sent to the group', nothingYet:'Tick a task to be able to send',
-    immediate:'Send on WhatsApp right after each task', sentMark:'sent',
-    msg:'✅ Completed', invalid:'Invalid or incomplete link. Please ask for the link again in the work group.', shift:'Shift of'
+    title:'End of shift report', name:'Your name', namePh:'e.g. John Smith', nameNeed:'Please enter your name first.',
+    yes:'Yes', no:'No', part:'Need extra time',
+    tasks:'Tasks', gear:'Machines and tools',
+    qMach:'🔧 Were the machines cleaned, checked and stored in the designated places?',
+    qTools:'🧹 Were the tools and utensils cleaned and stored in the designated places?',
+    answered:'answers given', hint:'Answer every question at the end of the shift: Yes (fully done), No (not done) or Need extra time. Then press the green button: WhatsApp opens, choose the work group and press Send. Your answers stay saved if you close the page.',
+    send:'📤 Send report on WhatsApp', resend:'📤 Resend report on WhatsApp', missing:'Still to answer:', missingEnd:'questions',
+    sentNote:'✔ Report sent. If you change an answer, you can resend.',
+    report:'📋 End of shift report', invalid:'Invalid or incomplete link. Please ask for the link again in the work group.', shift:'Shift of'
   }
 };
 
@@ -104,6 +107,7 @@ function buildTitles(p){
   (p.x || []).forEach(t => numbered.push('➕ ' + t));
   return numbered;
 }
+
 function hash32(str){ let h = 5381; for(let i=0;i<str.length;i++) h = ((h<<5)+h + str.charCodeAt(i)) | 0; return (h>>>0).toString(36); }
 function fmtDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -116,53 +120,59 @@ function waUrl(text){ return 'https://wa.me/?text=' + encodeURIComponent(text); 
 const rawHash = location.hash.replace(/^#/, '');
 const payload = decodePayload(rawHash);
 const L = I18N[(payload && payload.l) === 'en' ? 'en' : 'ro'];
-const STORE_KEY = 'opDone:' + (payload ? (payload.d || '') + ':' + hash32(rawHash) : 'x');
-let done = {};
-try{ done = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ done = {}; }
-function saveDone(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(done)); }catch(e){} }
+const STORE_KEY = 'opAns:' + (payload ? (payload.d || '') + ':' + hash32(rawHash) : 'x');
+
+// răspunsuri: cheile '0'..'N-1' pentru taskuri, 'm' = utilaje, 'k' = ustensile; valori y / n / p
+let state = {ans:{}, sent:false};
+try{ state = JSON.parse(localStorage.getItem(STORE_KEY)) || state; }catch(e){}
+function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
 function getName(){ try{ return localStorage.getItem('opName') || ''; }catch(e){ return ''; } }
 
-// mesaj pentru grup: un singur mesaj cu toate taskurile indicate (cu ora fiecăruia)
-function summaryMessage(idxs){
-  const who = [...new Set(idxs.map(i => done[i].by))].join(', ');
-  const lines = idxs.map(i => `• ${payload.t[i]} (${done[i].at})`);
-  return `${L.msg} – ${who}\n${lines.join('\n')}`;
+function allKeys(){ return payload.t.map((_, i) => String(i)).concat(['m', 'k']); }
+function label(v){ return v === 'y' ? '✅ ' + L.yes : v === 'n' ? '❌ ' + L.no : '⚠️ ' + L.part; }
+
+function setAns(key, v){
+  state.ans[key] = v;
+  state.sent = false;
+  saveState();
+  render();
 }
-function pendingIdx(){ return Object.keys(done).map(Number).filter(i => !done[i].sent).sort((a,b)=>a-b); }
 
-function getImmediate(){ try{ return localStorage.getItem('opImmediate') === '1'; }catch(e){ return false; } }
-function setImmediate(v){ try{ localStorage.setItem('opImmediate', v ? '1' : '0'); }catch(e){} }
+function reportMessage(name){
+  const lines = payload.t.map((t, i) => `${t}\n   ${label(state.ans[String(i)])}`);
+  lines.push(`${L.qMach}\n   ${label(state.ans.m)}`);
+  lines.push(`${L.qTools}\n   ${label(state.ans.k)}`);
+  return `${L.report} – ${name} (${nowHM()})\n${fmtDate(payload.d)}\n\n${lines.join('\n')}`;
+}
 
-function sendIdx(idxs){
-  if(!idxs.length) return;
-  const text = summaryMessage(idxs);
-  idxs.forEach(i => { done[i].sent = true; });
-  saveDone();
+function sendReport(){
+  const inp = document.getElementById('opName');
+  const name = inp.value.trim();
+  if(!name){ inp.classList.add('err'); inp.placeholder = L.nameNeed; inp.focus(); window.scrollTo(0, 0); return; }
+  try{ localStorage.setItem('opName', name); }catch(e){}
+  const missing = allKeys().filter(k => !state.ans[k]);
+  if(missing.length) return;
+  const text = reportMessage(name);
+  state.sent = true;
+  saveState();
   render();
   go(waUrl(text));
 }
-function sendPending(){ sendIdx(pendingIdx()); }
 
-function markDone(i){
-  const inp = document.getElementById('opName');
-  const name = inp.value.trim();
-  if(!name){ inp.classList.add('err'); inp.placeholder = L.nameNeed; inp.focus(); return; }
-  try{ localStorage.setItem('opName', name); }catch(e){}
-  done[i] = {by:name, at:nowHM(), sent:false};
-  saveDone();
-  if(getImmediate()) return sendIdx([i]);
-  render();
+function optionsRow(key){
+  const v = state.ans[key];
+  const b = (val, cls, txt) => `<button class="${v === val ? 'sel-' + cls : ''}" onclick="setAns('${key}','${val}')">${esc(txt)}</button>`;
+  return `<div class="opts">${b('y','y',L.yes)}${b('n','n',L.no)}${b('p','p',L.part)}</div>`;
 }
-function undo(i){ delete done[i]; saveDone(); render(); }
-function resend(i){ sendIdx([i]); }
 
 function render(){
   const app = document.getElementById('app');
   if(!payload){ app.innerHTML = `<div class="err-box">${esc(I18N.ro.invalid)}</div>`; return; }
-  const total = payload.t.length;
-  const count = Object.keys(done).length;
+  const keys = allKeys();
+  const total = keys.length;
+  const count = keys.filter(k => state.ans[k]).length;
+  const left = total - count;
   const keepName = document.getElementById('opName') ? document.getElementById('opName').value : getName();
-  const pending = pendingIdx().length;
   app.innerHTML = `
     <h1>${esc(L.title)}</h1>
     <p class="sub">${esc(L.shift)} ${esc(fmtDate(payload.d))}</p>
@@ -170,30 +180,23 @@ function render(){
       <label class="nm" for="opName">${esc(L.name)}</label>
       <input type="text" id="opName" value="${esc(keepName)}" placeholder="${esc(L.namePh)}" oninput="this.classList.remove('err')">
     </div>
-    <div class="progress">${count} / ${total} ${esc(L.progress)}</div>
+    <div class="progress">${count} / ${total} ${esc(L.answered)}</div>
     <div class="bar"><div style="width:${Math.round(count/total*100)}%"></div></div>
-    ${payload.t.map((t,i)=>{
-      const d = done[i];
-      return d ? `
-        <div class="card task done">
-          <div class="t">${esc(t)}</div>
-          <div class="meta">${esc(L.doneBy)}: ${esc(d.by)}, ${esc(d.at)}${d.sent ? ' · ✔ ' + esc(L.sentMark) : ''}</div>
-          <div class="row">
-            <button class="sec" onclick="resend(${i})">${esc(L.resend)}</button>
-            <button class="sec" onclick="undo(${i})">${esc(L.undo)}</button>
-          </div>
-        </div>` : `
-        <div class="card task">
-          <div class="t">${esc(t)}</div>
-          <div class="row"><button class="ok" onclick="markDone(${i})">${esc(L.done)}</button></div>
-        </div>`;
-    }).join('')}
+    <div class="sect">${esc(L.tasks)}</div>
+    ${payload.t.map((t, i) => `
+      <div class="card">
+        <div class="q">${esc(t)}</div>
+        ${optionsRow(String(i))}
+      </div>`).join('')}
+    <div class="sect">${esc(L.gear)}</div>
+    <div class="card"><div class="q">${esc(L.qMach)}</div>${optionsRow('m')}</div>
+    <div class="card"><div class="q">${esc(L.qTools)}</div>${optionsRow('k')}</div>
     <p class="hint">${esc(L.hint)}</p>
-    <label class="imm"><input type="checkbox" ${getImmediate() ? 'checked' : ''} onchange="setImmediate(this.checked)"> ${esc(L.immediate)}</label>
     <div class="sendbar">
-      ${pending > 0
-        ? `<button class="send" onclick="sendPending()">${esc(L.send)} (${pending} ${esc(L.sendNew)})</button>`
-        : `<button class="send off" disabled>${count > 0 ? esc(L.allSent) : esc(L.nothingYet)}</button>`}
+      ${state.sent && left === 0 ? `<div class="sentnote">${esc(L.sentNote)}</div>` : ''}
+      ${left > 0
+        ? `<button disabled>${esc(L.missing)} ${left} ${esc(L.missingEnd)}</button>`
+        : `<button onclick="sendReport()">${esc(state.sent ? L.resend : L.send)}</button>`}
     </div>`;
 }
 render();

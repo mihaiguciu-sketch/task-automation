@@ -205,7 +205,7 @@
 
     <label class="link-opt">
       <input type="checkbox" id="includeLink" onchange="setIncludeLink(this.checked)">
-      Adaugă în mesaj link pentru confirmarea taskurilor (operatorii apasă „Finalizat")
+      Adaugă în mesaj link STATUS pentru raportul de final de tură (operatorii răspund Da / Nu / Parțial)
     </label>
     <div class="lang-toggle">
       <button type="button" id="langRoBtn" class="lang-btn" onclick="setLang('ro')">🇷🇴 Română</button>
@@ -747,8 +747,8 @@ function generate(){
   let msg = `${headerLine}\n\n${pointsText}\n\n${closingText}`;
   if(includeLink){
     const linkLabel = currentLang === 'en'
-      ? '📲 STATUS – tap the link and mark each completed task:'
-      : '📲 STATUS – apasă pe link și bifează fiecare task finalizat:';
+      ? '📲 STATUS – at the end of the shift, tap the link and answer Yes / No / Need extra time for each task:'
+      : '📲 STATUS – la finalul turei, apasă pe link și răspunde Da / Nu / Parțial la fiecare task:';
     msg += `\n\n${linkLabel}\n${buildStatusLink(dataTura)}`;
   }
   document.getElementById('output').value = msg;
