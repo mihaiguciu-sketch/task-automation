@@ -32,6 +32,11 @@
   button.ok:active{background:var(--accent-dark);}
   button.sec{background:#fff; border:1px solid var(--border); color:var(--muted); padding:9px 12px; font-size:13px;}
   .hint{font-size:12.5px; color:var(--muted); margin:14px 2px;}
+  .imm{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--muted); margin:6px 2px 90px; cursor:pointer;}
+  .imm input{margin-top:2px;}
+  .sendbar{position:fixed; left:0; right:0; bottom:0; background:rgba(244,246,248,.96); border-top:1px solid var(--border); padding:10px 16px calc(10px + env(safe-area-inset-bottom));}
+  .sendbar button.send{display:block; width:100%; max-width:640px; margin:0 auto; background:#25D366; color:#fff; border:none; padding:14px; font-size:15px; font-weight:700; border-radius:10px;}
+  .sendbar button.send.off{background:#cfd6dc; color:#5b6670; font-weight:600;}
   .err-box{background:#fceceb; border:1px solid var(--danger); color:var(--danger); padding:14px; border-radius:10px;}
 </style>
 </head>
@@ -44,13 +49,17 @@ const I18N = {
   ro: {
     title:'Taskuri tură', name:'Numele tău', namePh:'ex: Ion Marin', nameNeed:'Scrie mai întâi numele tău.',
     done:'✔ Finalizat', doneBy:'Finalizat', undo:'↩ Anulează', resend:'📤 Retrimite pe WhatsApp',
-    progress:'finalizate', hint:'După ce apeși „Finalizat”, se deschide WhatsApp: alege grupul de lucru și apasă Trimite, ca să vadă și colegii.',
+    progress:'finalizate', hint:'Bifează taskurile pe rând, pe măsură ce le termini. Când vrei să anunți grupul, apasă „Trimite pe WhatsApp” din josul paginii: alege grupul de lucru și apasă Trimite. Poți lăsa pagina deschisă sau o poți redeschide oricând din același link, bifele rămân salvate.',
+    send:'📤 Trimite pe WhatsApp', sendNew:'noi', allSent:'✔ Toate trimise în grup', nothingYet:'Bifează un task ca să poți trimite',
+    immediate:'Trimite pe WhatsApp imediat după fiecare task', sentMark:'trimis',
     msg:'✅ Finalizat', invalid:'Link invalid sau incomplet. Cere din nou linkul din grupul de lucru.', shift:'Tura din'
   },
   en: {
     title:'Shift tasks', name:'Your name', namePh:'e.g. John Smith', nameNeed:'Please enter your name first.',
     done:'✔ Completed', doneBy:'Completed', undo:'↩ Undo', resend:'📤 Resend on WhatsApp',
-    progress:'completed', hint:'After you press “Completed”, WhatsApp opens: choose the work group and press Send so your colleagues see it.',
+    progress:'completed', hint:'Tick tasks one by one as you finish them. When you want to notify the group, press “Send on WhatsApp” at the bottom: choose the work group and press Send. You can keep this page open or reopen it anytime from the same link; your ticks stay saved.',
+    send:'📤 Send on WhatsApp', sendNew:'new', allSent:'✔ All sent to the group', nothingYet:'Tick a task to be able to send',
+    immediate:'Send on WhatsApp right after each task', sentMark:'sent',
     msg:'✅ Completed', invalid:'Invalid or incomplete link. Please ask for the link again in the work group.', shift:'Shift of'
   }
 };
@@ -113,23 +122,39 @@ try{ done = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ done =
 function saveDone(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(done)); }catch(e){} }
 function getName(){ try{ return localStorage.getItem('opName') || ''; }catch(e){ return ''; } }
 
-function message(i){
-  const d = done[i];
-  return `${L.msg}: ${payload.t[i]} – ${d.by}, ${d.at}`;
+// mesaj pentru grup: un singur mesaj cu toate taskurile indicate (cu ora fiecăruia)
+function summaryMessage(idxs){
+  const who = [...new Set(idxs.map(i => done[i].by))].join(', ');
+  const lines = idxs.map(i => `• ${payload.t[i]} (${done[i].at})`);
+  return `${L.msg} – ${who}\n${lines.join('\n')}`;
 }
+function pendingIdx(){ return Object.keys(done).map(Number).filter(i => !done[i].sent).sort((a,b)=>a-b); }
+
+function getImmediate(){ try{ return localStorage.getItem('opImmediate') === '1'; }catch(e){ return false; } }
+function setImmediate(v){ try{ localStorage.setItem('opImmediate', v ? '1' : '0'); }catch(e){} }
+
+function sendIdx(idxs){
+  if(!idxs.length) return;
+  const text = summaryMessage(idxs);
+  idxs.forEach(i => { done[i].sent = true; });
+  saveDone();
+  render();
+  go(waUrl(text));
+}
+function sendPending(){ sendIdx(pendingIdx()); }
 
 function markDone(i){
   const inp = document.getElementById('opName');
   const name = inp.value.trim();
   if(!name){ inp.classList.add('err'); inp.placeholder = L.nameNeed; inp.focus(); return; }
   try{ localStorage.setItem('opName', name); }catch(e){}
-  done[i] = {by:name, at:nowHM()};
+  done[i] = {by:name, at:nowHM(), sent:false};
   saveDone();
+  if(getImmediate()) return sendIdx([i]);
   render();
-  go(waUrl(message(i)));
 }
 function undo(i){ delete done[i]; saveDone(); render(); }
-function resend(i){ go(waUrl(message(i))); }
+function resend(i){ sendIdx([i]); }
 
 function render(){
   const app = document.getElementById('app');
@@ -137,6 +162,7 @@ function render(){
   const total = payload.t.length;
   const count = Object.keys(done).length;
   const keepName = document.getElementById('opName') ? document.getElementById('opName').value : getName();
+  const pending = pendingIdx().length;
   app.innerHTML = `
     <h1>${esc(L.title)}</h1>
     <p class="sub">${esc(L.shift)} ${esc(fmtDate(payload.d))}</p>
@@ -151,7 +177,7 @@ function render(){
       return d ? `
         <div class="card task done">
           <div class="t">${esc(t)}</div>
-          <div class="meta">${esc(L.doneBy)}: ${esc(d.by)}, ${esc(d.at)}</div>
+          <div class="meta">${esc(L.doneBy)}: ${esc(d.by)}, ${esc(d.at)}${d.sent ? ' · ✔ ' + esc(L.sentMark) : ''}</div>
           <div class="row">
             <button class="sec" onclick="resend(${i})">${esc(L.resend)}</button>
             <button class="sec" onclick="undo(${i})">${esc(L.undo)}</button>
@@ -162,7 +188,13 @@ function render(){
           <div class="row"><button class="ok" onclick="markDone(${i})">${esc(L.done)}</button></div>
         </div>`;
     }).join('')}
-    <p class="hint">${esc(L.hint)}</p>`;
+    <p class="hint">${esc(L.hint)}</p>
+    <label class="imm"><input type="checkbox" ${getImmediate() ? 'checked' : ''} onchange="setImmediate(this.checked)"> ${esc(L.immediate)}</label>
+    <div class="sendbar">
+      ${pending > 0
+        ? `<button class="send" onclick="sendPending()">${esc(L.send)} (${pending} ${esc(L.sendNew)})</button>`
+        : `<button class="send off" disabled>${count > 0 ? esc(L.allSent) : esc(L.nothingYet)}</button>`}
+    </div>`;
 }
 render();
 </script>
