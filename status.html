@@ -38,6 +38,7 @@
 <body>
 <div class="wrap" id="app"></div>
 
+<script src="data.js"></script>
 <script>
 const I18N = {
   ro: {
@@ -59,9 +60,40 @@ function decodePayload(h){
     const b64 = h.replace(/-/g,'+').replace(/_/g,'/');
     const json = decodeURIComponent(escape(atob(b64 + '='.repeat((4 - b64.length % 4) % 4))));
     const p = JSON.parse(json);
-    if(!p || !Array.isArray(p.t) || !p.t.length) return null;
+    if(!p) return null;
+    if(p.v === 2) p.t = buildTitles(p);          // link scurt: titlurile se reconstruiesc din data.js
+    if(!Array.isArray(p.t) || !p.t.length) return null;   // v1: titlurile vin direct în link
     return p;
   }catch(e){ return null; }
+}
+
+// reface lista numerotată de taskuri, în aceeași ordine ca în mesajul generat
+function buildTitles(p){
+  const en = p.l === 'en';
+  const respLabel = en ? FIXED_EN.personInCharge : 'Responsabil';
+  const titles = [];
+  const actTitle = (entry, resp)=>{
+    const id = Array.isArray(entry) ? entry[0] : entry;
+    const fv = Array.isArray(entry) ? entry[1] : {};
+    const a = activitati.find(x => x.id == id);
+    if(!a) return null;
+    let t = (en && activitatiEN[a.id]) ? activitatiEN[a.id].title : a.title;
+    (a.fields || []).forEach(f=>{ t = t.replaceAll(`{{${f.key.toUpperCase()}}}`, fv[f.key] || '____'); });
+    if(resp) t += ` (${respLabel}: ${resp})`;
+    return t;
+  };
+  POINTS_META.forEach(pm=>{
+    if(pm.type === 'fixed'){
+      titles.push((p.o && p.o[pm.key]) || (en ? FIXED_TITLES_EN : FIXED_TITLES_RO)[pm.key]);
+    } else {
+      const n = pm.key === 'p3' ? '3' : '4';
+      (p['a'+n] || []).forEach(e=>{ const t = actTitle(e, p['r'+n]); if(t) titles.push(t); });
+    }
+  });
+  (p.c || []).forEach(t => titles.push(t));
+  const numbered = titles.map((t, i) => `${i+1}. ${t}`);
+  (p.x || []).forEach(t => numbered.push('➕ ' + t));
+  return numbered;
 }
 function hash32(str){ let h = 5381; for(let i=0;i<str.length;i++) h = ((h<<5)+h + str.charCodeAt(i)) | 0; return (h>>>0).toString(36); }
 function fmtDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
